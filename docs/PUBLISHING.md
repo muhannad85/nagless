@@ -71,3 +71,13 @@ Stores want 1280×800 (CWS) / any reasonable size (AMO). Take from fixtures via 
 ## 8. QA log
 
 Append dated entries here after each manual QA pass (desktop + Android), listing real sites tested and block/miss/false-positive results.
+
+### 2026-08-21 — automated QA sweep (Chromium via Playwright, extension loaded from dist/chrome)
+
+- **Fixtures:** all 12 e2e tests green (8 nag patterns blocked incl. scroll-lock restore + focus blur; cookie banner and user-opened modal untouched; undo + pause verified; counters recorded).
+- **Mobile emulation (375×812, touch):** scroll-modal, autofocus-email, timed-modal all blocked; chip rendered; `activeElement` returned to BODY (keyboard-dismiss case) — pending confirmation on real Firefox for Android hardware.
+- **Real-site sweep** (homepage + one content page each, ~30s dwell with scrolling):
+  - loveandlemons.com — **blocked a live newsletter popup** (`subscribe-popup-bg` + `subscribe-popup-positioner`); page scrollable after; no errors.
+  - tasteofhome.com, forbes.com, countryliving.com — no popup shown to this fresh visitor; no leftover overlays (no misses), scrolling intact, no console errors attributable to Nagless.
+- **Store assets:** `docs/store-assets/1-before-nag.png`, `2-after-blocked-chip.png`, `3-popup.png`, `4-android-style-chip.png`. Note: retake `3-popup.png` from a real toolbar popup over a normal site before submission (harness renders the popup as its own tab, so the per-site row shows as disabled).
+- **Outstanding before submission:** desktop Firefox pass (`npm run start:firefox`), owner's Android-phone pass (IMPLEMENTATION.md Task 10 Step 4), listing screenshots final check.
