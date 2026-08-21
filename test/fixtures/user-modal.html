@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User-opened modal</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+           width: min(90vw, 480px); min-height: 40vh; background: #fff; z-index: 9999;
+           border-radius: 12px; padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 9998; }
+</style></head><body>
+<h1>User-opened modal</h1>
+<button id="open-modal" style="position:sticky;top:8px;">Open settings</button>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  document.getElementById("open-modal").addEventListener("click", () => {
+    const b = document.createElement("div"); b.className = "backdrop"; b.id = "backdrop";
+    const m = document.createElement("div"); m.className = "modal"; m.id = "nag";
+    m.innerHTML = '<h2>Settings</h2><input type="text" placeholder="Display name"><button>Save</button>';
+    document.body.append(b, m);
+    document.body.style.overflow = "hidden";
+  });
+</script>
+</body></html>

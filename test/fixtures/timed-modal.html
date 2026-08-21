@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timed interstitial</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+</style></head><body>
+<h1>Timed interstitial</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  setTimeout(() => {
+    const m = document.createElement("div");
+    m.id = "nag";
+    m.className = "promo-interstitial";
+    m.style.cssText = "position:fixed;inset:0;background:#123;color:#fff;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;";
+    m.innerHTML = "<h2>Special offer!</h2><p>Before you read on…</p><button>Claim</button>";
+    document.body.append(m);
+    document.documentElement.style.overflow = "hidden";
+  }, 1500);
+</script>
+</body></html>

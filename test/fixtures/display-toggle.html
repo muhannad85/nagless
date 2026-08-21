@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Display-toggled modal</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+           width: min(90vw, 480px); min-height: 40vh; background: #fff; z-index: 9999;
+           border-radius: 12px; padding: 24px; box-shadow: 0 8px 40px rgba(0,0,0,.4); }
+</style></head><body>
+<h1>Display-toggled modal</h1>
+<div id="nag" class="modal newsletter-signup" style="display:none">
+  <h2>Don't miss out</h2><input type="email" placeholder="Email"><button>Join</button>
+</div>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  setTimeout(() => {
+    document.getElementById("nag").style.display = "block";
+    document.body.style.overflow = "hidden";
+  }, 1500);
+</script>
+</body></html>
