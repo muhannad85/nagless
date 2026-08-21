@@ -37,6 +37,31 @@ test("full-width bottom sheet passes the size gate", () => {
   assert.equal(S.passesHardGates(c), true);
 });
 
+test("small centered card passes the size gate when a backdrop accompanies it", () => {
+  const card = { ...base, viewportCoverage: 0.15, widthFraction: 0.38, heightFraction: 0.4, hasBackdrop: true };
+  assert.equal(S.passesHardGates(card), true);
+});
+
+test("small centered card passes the size gate when a scroll-lock accompanies it", () => {
+  const card = { ...base, viewportCoverage: 0.15, widthFraction: 0.38, heightFraction: 0.4, scrollLockNearby: true };
+  assert.equal(S.passesHardGates(card), true);
+});
+
+test("small dialog-role card passes the size gate", () => {
+  const card = { ...base, viewportCoverage: 0.15, widthFraction: 0.38, heightFraction: 0.4, hasDialogSemantics: true };
+  assert.equal(S.passesHardGates(card), true);
+});
+
+test("signal-assisted gate still floors out tiny elements", () => {
+  const toast = { ...base, viewportCoverage: 0.04, widthFraction: 0.3, heightFraction: 0.1, hasDialogSemantics: true, scrollLockNearby: true };
+  assert.equal(S.passesHardGates(toast), false);
+});
+
+test("plain banner without dialog/backdrop/lock stays gated even above the floor", () => {
+  const banner = { ...base, viewportCoverage: 0.17, widthFraction: 1, heightFraction: 0.17 };
+  assert.equal(S.passesHardGates(banner), false);
+});
+
 test("standalone dimmer reaches threshold: lock + near-fullscreen + z", () => {
   const c = { ...base, viewportCoverage: 0.97, widthFraction: 1, heightFraction: 1, scrollLockNearby: true };
   assert.equal(S.softScore(c), 4);

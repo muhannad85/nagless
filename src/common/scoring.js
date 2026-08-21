@@ -15,6 +15,7 @@ var NaglessScoring = (() => {
     RECENT_WINDOW_MS: 5000,
     MAX_TRAVERSAL_NODES: 400,
     MIN_AREA_FRACTION: 0.25,
+    SIGNAL_MIN_AREA_FRACTION: 0.08,
     SHEET_MIN_WIDTH_FRACTION: 0.9,
     SHEET_MIN_HEIGHT_FRACTION: 0.2,
     NEAR_FULLSCREEN_FRACTION: 0.8,
@@ -32,10 +33,15 @@ var NaglessScoring = (() => {
     if (!c.uninvited || c.isOwnUi || c.alreadyProcessed) return false;
     if (c.position !== "fixed" && c.position !== "sticky") return false;
     if (!c.visible || c.opacity <= CONFIG.MIN_OPACITY) return false;
+    // A modest centered card still intercepts the whole page when it comes
+    // with a backdrop, a scroll-lock, or dialog semantics — those earn a much
+    // lower size floor. Raw size alone needs to be genuinely large.
     const bigEnough =
       c.viewportCoverage >= CONFIG.MIN_AREA_FRACTION ||
       (c.widthFraction >= CONFIG.SHEET_MIN_WIDTH_FRACTION &&
-        c.heightFraction >= CONFIG.SHEET_MIN_HEIGHT_FRACTION);
+        c.heightFraction >= CONFIG.SHEET_MIN_HEIGHT_FRACTION) ||
+      ((c.hasBackdrop || c.scrollLockNearby || c.hasDialogSemantics) &&
+        c.viewportCoverage >= CONFIG.SIGNAL_MIN_AREA_FRACTION);
     if (!bigEnough) return false;
     // Elements already present when we injected are page furniture (app
     // shells, maps, editors). They must show intent to nag, not just shape.

@@ -63,7 +63,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 
 ### 5.1 Interaction gating
 
-- Capture-phase, passive listeners on `window` for `pointerdown`, `keydown`, `touchstart` record `lastGestureTs`.
+- Capture-phase, passive listeners on `window` record `lastGestureTs` for: `click` (anywhere) and `keydown` on interactive targets (links, buttons, form fields, `[tabindex]`, contenteditable). Deliberately **not** `pointerdown`/`touchstart`/`wheel`: touch-scrolling begins with `touchstart` and desktop scrolling with wheel/keys, and scrolling must never count as an invitation — scroll-triggered popups are the primary target.
 - An overlay is **uninvited** iff it appeared (was inserted, or became visible via class/style change) more than `GESTURE_WINDOW_MS = 1000` after `lastGestureTs`.
 - Uninvited is a **hard gate**: invited overlays are never evaluated further. This is the primary false-positive defense.
 
@@ -73,7 +73,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 - Mutations are queued and processed in a single `requestAnimationFrame` batch (deduped). No full-document rescans, no polling intervals.
 - Candidates per batch: added element subtree roots, and existing elements whose `class`/`style` changed (covers the display-toggle pattern where the modal is in the DOM from page load and un-hidden later).
 - Within an added subtree, fixed/sticky descendants are found with a bounded traversal (depth- and count-limited) with early exits; `getComputedStyle` is called only on shortlisted elements.
-- One initial scan at `document_idle` catches overlays already present at injection time.
+- One initial scan at `document_idle` catches overlays already present at injection time. Elements present at that moment are flagged `preexisting` and additionally require dialog semantics or a nag keyword to be blockable — page furniture (app shells, maps, editors) must never match on shape alone.
 - Perf budget: no scanning long task > 50 ms on pages with 10k+ DOM nodes (verified on fixtures).
 
 ### 5.3 Overlay test — hard gates (all required)
@@ -82,7 +82,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 |---|---|
 | G1 Uninvited | §5.1 |
 | G2 Overlay positioning | Computed `position: fixed` or `sticky` |
-| G3 Size | Covers ≥ 25% of viewport area, **or** is a sheet: width ≥ 90% of viewport width and height ≥ 20% of viewport height |
+| G3 Size | Covers ≥ 25% of viewport area, **or** is a sheet: width ≥ 90% of viewport width and height ≥ 20% of viewport height, **or** covers ≥ 8% while accompanied by a backdrop, a scroll-lock, or dialog semantics (a modest centered card with any of those still intercepts the whole page) |
 | G4 Visible | Rendered (`display` ≠ `none`, `visibility: visible`, opacity > 0.05) and intersects the viewport |
 | G5 Foreign | Not Nagless UI, not already processed |
 
@@ -119,7 +119,7 @@ Caps against pathological sites: max `10` block events per page load; per elemen
 
 ## 6. Undo chip
 
-- Rendered in a **closed shadow root** on a host `<div>` appended to `<html>` (not `<body>`, which sites replace), all styles inline in the shadow — site CSS cannot affect it and no `web_accessible_resources` are needed.
+- Rendered in an **open shadow root** on a host `<div>` appended to `<html>` (not `<body>`, which sites replace), all styles inline in the shadow — site CSS cannot affect it and no `web_accessible_resources` are needed. (Open, not closed: closed mode only hides `host.shadowRoot` from page JS while the host node stays deletable either way, and it would break test automation and debuggability.)
 - Appearance: small dark pill, bottom-center, `position: fixed`, max z-index (2147483647), respects `env(safe-area-inset-bottom)`, honors `prefers-color-scheme`. Text: `Popup blocked` + `Undo` button. Touch target ≥ 44px.
 - Lifetime: auto-dismisses after `CHIP_TTL_MS = 5000`. Multiple rapid block events reuse the visible chip (counter increments) rather than stacking.
 - **Undo** restores every element of the chip's block event(s) to recorded styles, re-applies nothing else, and **pauses Nagless in that tab until the next real page load** (in-memory flag) so the restored popup isn't instantly re-hidden. The chip then disappears; no further UI.
