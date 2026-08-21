@@ -18,7 +18,7 @@ Modern websites interrupt reading with *uninvited* overlays: newsletter sign-up 
 | Detection strategy | Behavioral heuristics with interaction gating. No filter lists in v1 (seam left for v2). |
 | False-positive safety | Hide (never delete) + in-page "Popup blocked — Undo" chip + toolbar badge + per-site off switch. |
 | Name | **Nagless** (store listing style: "Nagless — popup & nag blocker"). Collision-checked against AMO/CWS 2026-08-21. |
-| Add-on ID (Firefox) | `nagless@syncdyn.com` — permanent once first submitted to AMO. |
+| Add-on ID (Firefox) | `muhannad.dev@gmail.com` (email-format identifier, doubles as the contact address) — permanent once first submitted to AMO. |
 | Runtime dependencies | None. Vanilla JS, no bundler, no frameworks. |
 | Data collection | None. No analytics, no network requests of any kind. |
 
@@ -164,7 +164,7 @@ Common: `manifest_version: 3`, name `Nagless`, `permissions: ["storage"]`, `host
 | Key | `manifest.firefox.json` | `manifest.chrome.json` |
 |---|---|---|
 | `background` | `{"scripts": ["background.js"]}` | `{"service_worker": "background.js"}` |
-| `browser_specific_settings` | `gecko.id: "nagless@syncdyn.com"`, `gecko.strict_min_version: "121.0"`, `gecko_android.strict_min_version: "121.0"` | — (CWS-unfriendly key omitted) |
+| `browser_specific_settings` | `gecko.id: "muhannad.dev@gmail.com"`, `gecko.strict_min_version: "121.0"`, `gecko_android.strict_min_version: "121.0"` | — (CWS-unfriendly key omitted) |
 | `minimum_chrome_version` | — | `"121"` |
 
 (Verified against MDN 2026-08-21: Firefox MV3 has no `service_worker` support and requires the gecko ID; Chrome 121+/Firefox 121+ each ignore the other's background key, but we ship clean per-store manifests anyway.)

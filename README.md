@@ -54,4 +54,4 @@ Chrome: load `dist/chrome` unpacked via `chrome://extensions` (Developer mode).
 
 ## License
 
-MIT © 2026 Muhannad Asfour
+MIT
