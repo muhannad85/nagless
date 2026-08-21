@@ -4,6 +4,8 @@
   "private": true,
   "description": "Popup & nag blocker — hides uninvited overlays, unlocks scrolling, dismisses the keyboard.",
   "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/muhannad85/nagless.git" },
+  "homepage": "https://github.com/muhannad85/nagless",
   "engines": { "node": ">=20" },
   "scripts": {
     "icons": "node tools/gen-icons.mjs",

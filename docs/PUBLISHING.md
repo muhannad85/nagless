@@ -18,7 +18,7 @@ Everything needed to submit Nagless to addons.mozilla.org (AMO) and the Chrome W
   > Privacy: Nagless collects nothing, sends nothing, and makes zero network requests. All settings stay in your browser.
 
 - **Category:** AMO → "Privacy & Security"; CWS → "Tools" (fallback: "Productivity").
-- **Privacy policy URL:** the repository's `PRIVACY.md` on its public GitHub page (set after the repo is pushed to GitHub; both stores accept a GitHub URL).
+- **Privacy policy URL:** `https://github.com/muhannad85/nagless/blob/main/PRIVACY.md`
 - **Support email:** muhannad.dev@gmail.com
 
 ## 2. Permission justification (both stores ask)
