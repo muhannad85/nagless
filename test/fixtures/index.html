@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nagless test pages</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 0 auto; max-width: 44em; padding: 16px; }
+  h1 { font-size: 1.3em; } h1 img { vertical-align: -4px; }
+  p.hint { color: color-mix(in srgb, currentColor 65%, transparent); font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { text-align: left; vertical-align: top; padding: 10px 8px; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+  th { font-size: .85em; text-transform: uppercase; letter-spacing: .04em; }
+  a { font-weight: 600; display: inline-block; padding: 4px 0; }
+  .tag { display: inline-block; font-size: .72em; font-weight: 700; border-radius: 4px; padding: 2px 6px; margin-top: 4px; }
+  .block { background: #4F46E5; color: #fff; }
+  .keep { background: #16A34A; color: #fff; }
+  td.exp { font-size: .92em; }
+</style></head><body>
+<h1>Nagless test pages</h1>
+<p class="hint">Use a <b>normal tab</b> (extensions don't run in private browsing). Every "BLOCK" page should also show the <b>"Popup blocked — Undo"</b> chip at the bottom for ~5 seconds; tapping <b>Undo</b> must bring the popup back and keep it until you reload.</p>
+<table>
+  <tr><th>Page</th><th>Success looks like</th></tr>
+  <tr>
+    <td><a href="scroll-modal.html">scroll-modal</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Scroll down ~2 screens. The newsletter modal + dark backdrop vanish (or never land), the chip appears, and you can keep scrolling.</td>
+  </tr>
+  <tr>
+    <td><a href="autofocus-email.html">autofocus-email</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Scroll down ~2 screens. Modal gone and — the big one — <b>the keyboard never pops up</b> (or dismisses instantly).</td>
+  </tr>
+  <tr>
+    <td><a href="timed-modal.html">timed-modal</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Wait ~1.5s. The full-screen "Special offer" interstitial disappears right after it appears; page still scrolls.</td>
+  </tr>
+  <tr>
+    <td><a href="fixed-body-lock.html">fixed-body-lock</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Scroll a bit, wait ~1.5s. Modal gone and the page <b>stays at your scroll position</b> (this lock variant normally teleports you to the top).</td>
+  </tr>
+  <tr>
+    <td><a href="display-toggle.html">display-toggle</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Wait ~1.5s. The pre-hidden modal is un-hidden by the page but never visibly appears (or vanishes immediately); scrolling stays unlocked.</td>
+  </tr>
+  <tr>
+    <td><a href="late-injection.html">late-injection</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">Wait ~3s. The nested "Subscribe today" dialog disappears shortly after injection.</td>
+  </tr>
+  <tr>
+    <td><a href="cookie-banner.html">cookie-banner</a><br><span class="tag keep">KEEP</span></td>
+    <td class="exp">The small bottom cookie bar <b>stays visible</b> the whole time — Nagless must not touch it.</td>
+  </tr>
+  <tr>
+    <td><a href="user-modal.html">user-modal</a><br><span class="tag keep">KEEP</span></td>
+    <td class="exp">Tap "Open settings". The modal opens and <b>stays open</b> — modals you asked for are never blocked.</td>
+  </tr>
+</table>
+</body></html>
