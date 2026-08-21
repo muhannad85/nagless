@@ -1,0 +1,24 @@
+{
+  "name": "nagless",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Popup & nag blocker — hides uninvited overlays, unlocks scrolling, dismisses the keyboard.",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "icons": "node tools/gen-icons.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node --test test/unit/",
+    "e2e": "npm run build && playwright test",
+    "fixtures": "node test/fixtures/serve.mjs",
+    "lint": "npm run build && web-ext lint --source-dir dist/firefox",
+    "start:firefox": "npm run build && web-ext run --source-dir dist/firefox",
+    "start:android": "npm run build && web-ext run -t firefox-android --source-dir dist/firefox --firefox-apk org.mozilla.firefox",
+    "sign": "npm run build && web-ext sign --source-dir dist/firefox --channel listed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "web-ext": "^8.3.0"
+  }
+}
