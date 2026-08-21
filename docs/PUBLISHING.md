@@ -81,3 +81,9 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
   - tasteofhome.com, forbes.com, countryliving.com — no popup shown to this fresh visitor; no leftover overlays (no misses), scrolling intact, no console errors attributable to Nagless.
 - **Store assets:** `docs/store-assets/1-before-nag.png`, `2-after-blocked-chip.png`, `3-popup.png`, `4-android-style-chip.png`. Note: retake `3-popup.png` from a real toolbar popup over a normal site before submission (harness renders the popup as its own tab, so the per-site row shows as disabled).
 - **Outstanding before submission:** desktop Firefox pass (`npm run start:firefox`), owner's Android-phone pass (IMPLEMENTATION.md Task 10 Step 4), listing screenshots final check.
+
+### 2026-08-21 — Android on-device session (Firefox 154 release, via web-ext/adb)
+
+- Initial "extension does nothing" report root-caused to **private browsing mode**: Firefox (desktop and Android) does not run extensions in private tabs unless the user enables "Run in private browsing" for that extension. Not a Nagless bug; expect the same report from store users — the listing description or a support FAQ should mention it.
+- In a normal tab the acceptance case works on-device (owner-confirmed).
+- Ops note: `adb reverse` port mappings can drop when Firefox restarts — re-run `adb reverse tcp:8907 tcp:8907` if fixture pages stop loading on the phone.
