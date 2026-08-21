@@ -86,4 +86,5 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 
 - Initial "extension does nothing" report root-caused to **private browsing mode**: Firefox (desktop and Android) does not run extensions in private tabs unless the user enables "Run in private browsing" for that extension. Not a Nagless bug; expect the same report from store users — the listing description or a support FAQ should mention it.
 - In a normal tab the acceptance case works on-device (owner-confirmed).
+- **Full on-device pass (owner-confirmed): all 8 fixture pages behaved as specified on real hardware** — 6 BLOCK pages blocked with chip (autofocus case: no keyboard), 2 KEEP pages untouched, via the fixture index page. The Android publishing gate from SPEC §11.5 is met.
 - Ops note: `adb reverse` port mappings can drop when Firefox restarts — re-run `adb reverse tcp:8907 tcp:8907` if fixture pages stop loading on the phone.
