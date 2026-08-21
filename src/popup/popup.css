@@ -1,2 +1,14 @@
-body { font: 14px/1.4 system-ui, sans-serif; margin: 0; min-width: 260px; }
-main { padding: 12px; }
+:root { color-scheme: light dark; }
+body { font: 14px/1.45 system-ui, sans-serif; margin: 0; min-width: 264px; }
+main { padding: 8px 14px 12px; }
+header { display: flex; align-items: center; gap: 8px; padding: 6px 0 10px; }
+h1 { font-size: 15px; margin: 0; }
+.row { display: flex; align-items: center; justify-content: space-between;
+       min-height: 44px; gap: 12px; }
+.row input[type="checkbox"] { width: 40px; height: 22px; accent-color: #4F46E5; }
+.row[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+.counters { color: color-mix(in srgb, currentColor 62%, transparent); margin: 8px 0 0; }
+#perm p { margin: 4px 0 10px; }
+#perm button { width: 100%; min-height: 44px; border: 0; border-radius: 8px;
+               background: #4F46E5; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+b { font-weight: 600; }

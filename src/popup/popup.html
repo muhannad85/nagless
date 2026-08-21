@@ -3,6 +3,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="popup.css">
 </head><body>
-<main id="app"><h1>Nagless</h1><p id="status">Loading…</p></main>
+<main>
+  <header><img src="../icons/icon-32.png" alt="" width="20" height="20"><h1>Nagless</h1></header>
+
+  <section id="perm" hidden>
+    <p>Nagless needs permission to see pages so it can hide nag popups. Nothing is collected or sent anywhere.</p>
+    <button id="grant">Grant access to websites</button>
+  </section>
+
+  <section id="controls">
+    <label class="row"><span>Enabled</span>
+      <input type="checkbox" id="toggle-global" role="switch"></label>
+    <label class="row" id="site-row"><span>On <b id="site-host">this site</b></span>
+      <input type="checkbox" id="toggle-site" role="switch"></label>
+    <p class="counters"><span id="count-tab">0</span> blocked on this page · <span id="count-total">0</span> all-time</p>
+  </section>
+</main>
 <script src="popup.js"></script>
 </body></html>
