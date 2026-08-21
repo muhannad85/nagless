@@ -31,6 +31,7 @@ Everything needed to submit Nagless to addons.mozilla.org (AMO) and the Chrome W
 2. `npm run build` → submit `dist/nagless-firefox-1.0.0.zip` as a **listed** add-on.
 3. Reviewer notes field: "No bundler or minification — the zip content is the literal source. Icons are PNGs rendered from assets/icon.svg in the repository. Zero network requests; `data_collection_permissions: none` declared in the manifest."
 4. Android: `gecko_android` in the manifest makes AMO list it for Firefox for Android automatically. Verify the "Firefox for Android" compatibility checkbox is on.
+   Permissions reality for store users (researched 2026-08-21): since Firefox 127/128, MV3 host permissions are shown in the install prompt and granted automatically at install on desktop **and** Android, and `permissions.request()` from the popup shows a native Allow/Deny dialog on Android — so the popup's grant banner is only a backstop for users who later revoke access (⋮ → Extensions → Nagless → permission toggles). One known upstream gap: origins added in a future *update* are not auto-shown/granted (Bugzilla 1893232) — avoid adding new host permissions in updates.
 5. Review: automated validation immediately; human review typically days. The listing goes live when approved.
 
 ## 4. Chrome Web Store (Chrome + Edge desktop users)
