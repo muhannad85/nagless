@@ -48,8 +48,8 @@ Chrome: load `dist/chrome` unpacked via `chrome://extensions` (Developer mode).
 ## Project documentation
 
 - [docs/SPEC.md](docs/SPEC.md) — design specification (scope, detection engine, UI, platforms)
-- `docs/IMPLEMENTATION.md` — phased implementation plan *(written next, after spec review)*
-- `docs/PUBLISHING.md` — AMO / Chrome Web Store submission runbook *(written during the publishing phase)*
+- [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) — task-by-task implementation plan
+- [docs/PUBLISHING.md](docs/PUBLISHING.md) — AMO / Chrome Web Store submission runbook and listing copy
 - [PRIVACY.md](PRIVACY.md) — privacy statement: Nagless collects nothing
 
 ## License
