@@ -86,6 +86,7 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 ### 2026-08-22 — AMO first submission
 
 - Validator: 0 errors, 2 warnings — `data_collection_permissions` is only understood from Firefox 140 (desktop) / 142 (Android), below our 121 floor. Resolved by raising `strict_min_version` to 140.0 / 142.0; `web-ext lint` clean; re-uploaded `nagless-firefox-1.0.0.zip`.
+- **Submitted to AMO as listed version 1.0.0 on 2026-08-22** (source-code question: No — zip is literal source). Awaiting automated publication / possible manual review. Git tag `v1.0.0`.
 
 ### 2026-08-21 — Android on-device session (Firefox 154 release, via web-ext/adb)
 
