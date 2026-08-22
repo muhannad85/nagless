@@ -18,7 +18,6 @@
 - Browser API access pattern everywhere: `const api = globalThis.browser ?? globalThis.chrome;` promise-style.
 - Background must be event-page-safe: no in-memory state that matters across restarts (use `storage.session`).
 - Content scripts are classic scripts (no ES modules): `common/scoring.js` then `content/content.js` share scope.
-- Commit after every task with the trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 
 **Two approved spec refinements to apply during Task 6 (edit docs/SPEC.md in the same commit):**
 1. §5.1 gesture list becomes **`click` (anywhere) + `keydown` on interactive targets** — `pointerdown`/`touchstart` would mark touch-*scrolling* as a gesture and unblock the primary mobile case (scroll-triggered popups); scroll must never count as an invitation.
