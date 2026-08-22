@@ -10,7 +10,7 @@
 
 ## Global Constraints (from docs/SPEC.md)
 
-- Manifest V3 only. Minimums: Firefox `strict_min_version: "121.0"` (`gecko` **and** `gecko_android`), Chrome `minimum_chrome_version: "121"`.
+- Manifest V3 only. Minimums: Firefox `gecko.strict_min_version: "140.0"`, `gecko_android.strict_min_version: "142.0"` (floor of the `data_collection_permissions` key AMO requires), Chrome `minimum_chrome_version: "121"`.
 - Firefox add-on ID (permanent): `muhannad.dev@gmail.com`.
 - Extension name everywhere: **Nagless**. Version starts `1.0.0`.
 - Permissions exactly: `["storage"]` + `host_permissions: ["<all_urls>"]`. Nothing else. No network requests anywhere in shipped code.
@@ -541,8 +541,8 @@ git commit -m "Add nag-pattern fixture pages and local fixture server"
   "version": "1.0.0",
   "description": "Hides uninvited popups — newsletter nags, scroll-triggered overlays, timed interstitials. Unlocks scrolling and dismisses the keyboard they pop open.",
   "browser_specific_settings": {
-    "gecko": { "id": "muhannad.dev@gmail.com", "strict_min_version": "121.0" },
-    "gecko_android": { "strict_min_version": "121.0" }
+    "gecko": { "id": "muhannad.dev@gmail.com", "strict_min_version": "140.0" },
+    "gecko_android": { "strict_min_version": "142.0" }
   },
   "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "96": "icons/icon-96.png", "128": "icons/icon-128.png" },
   "permissions": ["storage"],

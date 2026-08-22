@@ -55,7 +55,7 @@ Modern websites interrupt reading with *uninvited* overlays: newsletter sign-up 
 | Edge desktop | Full | Installs from CWS; dedicated Edge Add-ons listing is a post-v1 option |
 | Chrome/Edge on Android | Impossible — no extension support | — |
 
-Minimum versions: Firefox 121 (`gecko` and `gecko_android` `strict_min_version: "121.0"`), Chrome 121 (`minimum_chrome_version`). Rationale: 121 is where both browsers cleanly tolerate the dual `background` key (§8).
+Minimum versions: Firefox 140 desktop and 142 Android (`gecko.strict_min_version: "140.0"`, `gecko_android.strict_min_version: "142.0"`), Chrome 121 (`minimum_chrome_version`). Rationale: both browsers tolerate the dual `background` key from 121 (§8), but Firefox only understands the `data_collection_permissions` manifest key — which AMO wants on new submissions — from 140 (desktop) and 142 (Android); declaring a key below its support floor triggers AMO validation warnings.
 
 ## 5. Detection engine
 
@@ -164,7 +164,7 @@ Common: `manifest_version: 3`, name `Nagless`, `permissions: ["storage"]`, `host
 | Key | `manifest.firefox.json` | `manifest.chrome.json` |
 |---|---|---|
 | `background` | `{"scripts": ["background.js"]}` | `{"service_worker": "background.js"}` |
-| `browser_specific_settings` | `gecko.id: "muhannad.dev@gmail.com"`, `gecko.strict_min_version: "121.0"`, `gecko_android.strict_min_version: "121.0"` | — (CWS-unfriendly key omitted) |
+| `browser_specific_settings` | `gecko.id: "muhannad.dev@gmail.com"`, `gecko.strict_min_version: "140.0"`, `gecko_android.strict_min_version: "142.0"`, `gecko.data_collection_permissions: {"required": ["none"]}` | — (CWS-unfriendly key omitted) |
 | `minimum_chrome_version` | — | `"121"` |
 
 (Verified against MDN 2026-08-21: Firefox MV3 has no `service_worker` support and requires the gecko ID; Chrome 121+/Firefox 121+ each ignore the other's background key, but we ship clean per-store manifests anyway.)

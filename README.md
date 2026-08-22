@@ -20,7 +20,7 @@ Full behavior specification: [docs/SPEC.md](docs/SPEC.md).
 | Edge desktop | ✅ (installs from Chrome Web Store) |
 | Chrome/Edge on Android | ❌ those browsers don't support extensions |
 
-Manifest V3 across the board. Minimum: Firefox 121, Chrome 121.
+Manifest V3 across the board. Minimum: Firefox 140 (Firefox for Android 142), Chrome 121.
 
 ## Controls
 
