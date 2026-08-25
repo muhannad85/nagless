@@ -142,7 +142,8 @@
     if (!el.isConnected) return;
     if (state.hidden.has(el)) { reassertHide(el); return; }
     const cs = getComputedStyle(el);
-    if (cs.position !== "fixed" && cs.position !== "sticky") return;
+    const fixedish = cs.position === "fixed" || cs.position === "sticky";
+    if (!fixedish && cs.position === "static") return;
 
     const vw = window.innerWidth, vh = window.innerHeight;
     const rect = el.getBoundingClientRect();
@@ -151,6 +152,9 @@
     const coverage = vw && vh ? (interW * interH) / (vw * vh) : 0;
     const visible = cs.display !== "none" && cs.visibility === "visible" && interW > 0 && interH > 0;
     if (!visible) return;
+    const coversViewport =
+      interW / (vw || 1) >= C.WALL_MIN_DIM_FRACTION && interH / (vh || 1) >= C.WALL_MIN_DIM_FRACTION;
+    if (!fixedish && !coversViewport) return; // positioned but small: never a wall
     const opacity = parseFloat(cs.opacity);
 
     let appearedTs = state.appearTs.get(el);
@@ -189,9 +193,11 @@
       keywordHitSelf: S.keywordHit(selfText),
       hasBackdrop: backdropEl !== null,
       scrollLockNearby: lockNearby(appearedTs),
+      coversViewport,
+      positioned: cs.position !== "static",
     };
 
-    if (S.shouldBlock(candidate)) block(el, backdropEl);
+    if (S.shouldBlock(candidate)) block(el, backdropEl, candidate.hasDialogSemantics);
   }
 
   function hasVisibleDialogDescendant(el) {
@@ -295,7 +301,7 @@
 
   // ---------- actions ----------
 
-  function block(el, backdropEl) {
+  function block(el, backdropEl, isDialogWall) {
     if (state.events >= C.MAX_EVENTS_PER_PAGE) return;
     const sig = signatureOf(el);
     const nth = (state.signatures.get(sig) ?? 0) + 1;
@@ -309,6 +315,7 @@
     if (active && targets.some((t) => t.contains(active))) active.blur(); // dismisses mobile keyboard
 
     for (const t of targets) hideEl(t);
+    if (isDialogWall) sweepDetachedDims(targets);
     unlockScroll();
     state.reassertUntil = now() + C.REASSERT_WINDOW_MS;
 
@@ -316,6 +323,25 @@
       state.events += 1;
       try { api.runtime.sendMessage({ type: "nagless:blocked", count: 1 }); } catch { /* bg asleep/unavailable */ }
       showChip();
+    }
+  }
+
+  function sweepDetachedDims(eventTargets) {
+    // Some walls (Instagram desktop) keep their dimming layers as separate
+    // fixed divs elsewhere in the DOM. When a dialog-bearing wall is blocked,
+    // hide recently-appeared full-viewport dim layers so the page is usable.
+    pruneRecent();
+    for (const { el } of state.recent) {
+      if (!el.isConnected || state.hidden.has(el) || eventTargets.includes(el)) continue;
+      const cs = getComputedStyle(el);
+      if (cs.position !== "fixed" || cs.display === "none") continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < window.innerWidth * C.WALL_MIN_DIM_FRACTION ||
+          r.height < window.innerHeight * C.WALL_MIN_DIM_FRACTION) continue;
+      if (el.children.length > 2 || (el.textContent || "").trim().length > 40) continue;
+      if (cs.backdropFilter === "none" && backgroundAlpha(cs.backgroundColor) <= 0.05) continue;
+      hideEl(el);
+      eventTargets.push(el);
     }
   }
 

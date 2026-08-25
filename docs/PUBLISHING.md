@@ -89,6 +89,13 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 - Validator: 0 errors, 2 warnings — `data_collection_permissions` is only understood from Firefox 140 (desktop) / 142 (Android), below our 121 floor. Resolved by raising `strict_min_version` to 140.0 / 142.0; `web-ext lint` clean; re-uploaded `nagless-firefox-1.0.0.zip`.
 - **Submitted to AMO as listed version 1.0.0 on 2026-08-22** (source-code question: No — zip is literal source). Awaiting automated publication / possible manual review. Git tag `v1.0.0`.
 
+### 2026-08-25 — v1.0.2: desktop app-shell login walls
+
+- **Fixed:** Instagram's *desktop* wall still showed after 1.0.1 — desktop IG serves a completely different structure: a `position:relative`, z-indexed, viewport-covering layer over an inner scroll container (no `fixed` anywhere), with detached fixed dim divs. The positioning gate now also accepts positioned, viewport-covering layers that carry a visible dialog; blocking a dialog wall additionally sweeps recently-appeared detached full-viewport dim layers.
+- Parity verification matrix (instrumented Chromium): instagram {desktop: wall blocked + page clickable, mobile: blocked}, youtube watch {desktop + mobile: player untouched, video plays}. 26 unit + 16 e2e green; `web-ext lint` clean.
+- New regression fixture: `login-wall-desktop.html` (BLOCK, includes detached-dim sweep assertion).
+- **Process rule (standing): site-facing changes are verified on BOTH mobile and desktop layouts — they are different pages.** The 1.0.1 IG fix was verified mobile-only; that gap caused this release.
+
 ### 2026-08-25 — v1.0.1: YouTube false positive + login-wall support
 
 - **Fixed (bug):** m.youtube.com sticky player was hidden. Root causes: a child's "overlay" class satisfied the page-furniture intent gate, and programmatic focus of player controls counted as the autofocus signal. Fixes: elements containing `<video>` without a text input are never blocked; the focus signal now counts only focused text fields; furniture intent keywords must be on the element itself.

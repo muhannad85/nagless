@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App-shell login wall (must block)</title>
+<style>
+  /* Instagram-desktop-shaped: the BODY never scrolls — an inner container
+     does — so the wall needs no position:fixed at all. */
+  html, body { height: 100%; margin: 0; overflow: hidden; font: 18px/1.6 system-ui, sans-serif; }
+  #scrollview { height: 100vh; overflow-y: auto; padding: 1em; box-sizing: border-box; }
+  #scrollview .inner { max-width: 40em; margin: 0 auto; }
+  /* Detached dim layer: fixed, elsewhere in the DOM, not inside the wall */
+  #dim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 2; }
+  /* The wall: relative, z-indexed, viewport-covering, stacked over the app */
+  #nag { position: relative; z-index: 3; width: 100%; height: 100vh; margin-top: -100vh; }
+  .wrap-a { display: flex; height: 100%; align-items: center; justify-content: center; }
+  .card { background: #1c1c24; color: #f4f5f7; border-radius: 12px; padding: 32px;
+          width: min(88vw, 420px); text-align: center; position: relative; }
+  .card button { background: #4f46e5; border: 0; color: #fff; border-radius: 8px;
+                 padding: 12px 24px; font: inherit; margin-top: 16px; }
+</style></head><body>
+<div id="scrollview">
+  <div class="inner">
+    <h1>Profile page behind an app-shell wall</h1>
+    <div id="content"></div>
+  </div>
+</div>
+<div id="dim"></div>
+<div id="nag" class="x7r4mzz xq1dxzn">
+  <div class="wrap-a"><div class="wrap-b">
+    <div class="card" role="dialog">
+      <h2>See more from this account</h2>
+      <p>Log in to keep browsing.</p>
+      <button>Log in</button>
+    </div>
+  </div></div>
+</div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+</body></html>

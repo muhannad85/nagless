@@ -95,6 +95,19 @@ test("logged-out wall (preexisting, obfuscated classes, deep dialog) is hidden",
   await page.close();
 });
 
+test("app-shell wall (relative layer + detached fixed dim) is fully cleared", async () => {
+  const page = await openFixture("login-wall-desktop");
+  await nagAppears(page, 3000);
+  await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+  await expect(page.locator("#dim")).toBeHidden(); // detached dim swept with the wall
+  await expect(chipUndo(page)).toBeVisible();
+  // inner scroll container still works
+  await page.evaluate(() => document.getElementById("scrollview").scrollTo(0, 400));
+  const y = await page.evaluate(() => document.getElementById("scrollview").scrollTop);
+  expect(y).toBeGreaterThan(300);
+  await page.close();
+});
+
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");
   await page.waitForTimeout(2500); // outlives the 1s programmatic focus

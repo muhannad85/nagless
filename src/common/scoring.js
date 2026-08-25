@@ -15,6 +15,7 @@ var NaglessScoring = (() => {
     RECENT_WINDOW_MS: 5000,
     MAX_TRAVERSAL_NODES: 400,
     MIN_AREA_FRACTION: 0.25,
+    WALL_MIN_DIM_FRACTION: 0.9,
     SIGNAL_MIN_AREA_FRACTION: 0.08,
     SHEET_MIN_WIDTH_FRACTION: 0.9,
     SHEET_MIN_HEIGHT_FRACTION: 0.2,
@@ -31,7 +32,13 @@ var NaglessScoring = (() => {
 
   function passesHardGates(c) {
     if (!c.uninvited || c.isOwnUi || c.alreadyProcessed) return false;
-    if (c.position !== "fixed" && c.position !== "sticky") return false;
+    const overlayPositioned =
+      c.position === "fixed" || c.position === "sticky" ||
+      // App-shell walls (Instagram desktop): when the page scrolls an inner
+      // container, a positioned viewport-covering layer carrying a visible
+      // dialog is an overlay without ever being position:fixed.
+      (c.coversViewport && c.positioned && c.hasDialogSemantics);
+    if (!overlayPositioned) return false;
     if (!c.visible || c.opacity <= CONFIG.MIN_OPACITY) return false;
     // Video players are content, not nags: an element carrying a <video> and
     // no text input is never blockable (learned from the YouTube sticky

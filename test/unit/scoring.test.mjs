@@ -8,6 +8,7 @@ const base = {
   position: "fixed", visible: true, opacity: 1,
   viewportCoverage: 0.5, widthFraction: 0.7, heightFraction: 0.7,
   zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, textInputFocused: false, hasVideo: false, keywordHitSelf: false,
+  coversViewport: false, positioned: false,
   keywordHit: false, hasBackdrop: false, scrollLockNearby: false,
 };
 
@@ -77,6 +78,31 @@ test("preexisting page furniture needs intent signals (dialog/keyword)", () => {
   assert.equal(S.shouldBlock(appShell), false);
   assert.equal(S.shouldBlock({ ...appShell, keywordHit: true, keywordHitSelf: true }), true);
   assert.equal(S.shouldBlock({ ...appShell, hasDialogSemantics: true }), true);
+});
+
+test("positioned viewport-covering layer with dialog qualifies without position:fixed", () => {
+  const wall = { ...base, position: "relative", positioned: true, coversViewport: true,
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true, zIndex: 3 };
+  assert.equal(S.passesHardGates(wall), true);
+  assert.equal(S.shouldBlock(wall), true); // dialog 2 + fullscreen 1 = 3
+});
+
+test("static viewport-covering layer never qualifies, even with a dialog", () => {
+  const layer = { ...base, position: "static", positioned: false, coversViewport: true,
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true };
+  assert.equal(S.passesHardGates(layer), false);
+});
+
+test("positioned viewport-covering app shell without dialog stays exempt", () => {
+  const shell = { ...base, position: "relative", positioned: true, coversViewport: true,
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, scrollLockNearby: true, hasTextInput: true };
+  assert.equal(S.passesHardGates(shell), false);
+});
+
+test("non-covering positioned element with dialog still needs fixed/sticky", () => {
+  const card = { ...base, position: "relative", positioned: true, coversViewport: false,
+    viewportCoverage: 0.3, hasDialogSemantics: true };
+  assert.equal(S.passesHardGates(card), false);
 });
 
 test("video players are immune: contains video, no text input", () => {
