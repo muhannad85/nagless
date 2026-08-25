@@ -87,6 +87,22 @@ test("late nested injection is found and hidden", async () => {
   await page.close();
 });
 
+test("logged-out wall (preexisting, obfuscated classes, deep dialog) is hidden", async () => {
+  const page = await openFixture("login-wall");
+  await nagAppears(page, 3000);
+  await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+  await expect(chipUndo(page)).toBeVisible();
+  await page.close();
+});
+
+test("sticky video player is NOT touched despite focus and overlay classes", async () => {
+  const page = await openFixture("video-player");
+  await page.waitForTimeout(2500); // outlives the 1s programmatic focus
+  await expect(page.locator("#player")).toBeVisible();
+  await expect(page.locator("#player video")).toBeVisible();
+  await page.close();
+});
+
 test("small cookie banner is NOT touched", async () => {
   const page = await openFixture("cookie-banner");
   await page.waitForTimeout(2500);

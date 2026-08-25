@@ -88,6 +88,13 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 - Validator: 0 errors, 2 warnings — `data_collection_permissions` is only understood from Firefox 140 (desktop) / 142 (Android), below our 121 floor. Resolved by raising `strict_min_version` to 140.0 / 142.0; `web-ext lint` clean; re-uploaded `nagless-firefox-1.0.0.zip`.
 - **Submitted to AMO as listed version 1.0.0 on 2026-08-22** (source-code question: No — zip is literal source). Awaiting automated publication / possible manual review. Git tag `v1.0.0`.
 
+### 2026-08-25 — v1.0.1: YouTube false positive + login-wall support
+
+- **Fixed (bug):** m.youtube.com sticky player was hidden. Root causes: a child's "overlay" class satisfied the page-furniture intent gate, and programmatic focus of player controls counted as the autofocus signal. Fixes: elements containing `<video>` without a text input are never blocked; the focus signal now counts only focused text fields; furniture intent keywords must be on the element itself.
+- **Added (feature):** Instagram-style logged-out walls — full-screen preexisting containers with obfuscated classes and `role="dialog"` nested deep inside — are now detected (dialog detection accepts *visible* descendant dialogs at any depth).
+- Verified on live m.youtube.com (player untouched, video renders) and instagram.com (wall hidden, no leftover layers, taps reach content) via instrumented Chromium probes; 22 unit + 14 e2e green, `web-ext lint` clean.
+- New regression fixtures: `video-player.html` (KEEP), `login-wall.html` (BLOCK).
+
 ### 2026-08-21 — Android on-device session (Firefox 154 release, via web-ext/adb)
 
 - Initial "extension does nothing" report root-caused to **private browsing mode**: Firefox (desktop and Android) does not run extensions in private tabs unless the user enables "Run in private browsing" for that extension. Not a Nagless bug; expect the same report from store users — the listing description or a support FAQ should mention it.

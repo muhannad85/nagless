@@ -7,7 +7,7 @@ const base = {
   uninvited: true, isOwnUi: false, alreadyProcessed: false, preexisting: false,
   position: "fixed", visible: true, opacity: 1,
   viewportCoverage: 0.5, widthFraction: 0.7, heightFraction: 0.7,
-  zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, autofocusSeen: false,
+  zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, textInputFocused: false, hasVideo: false, keywordHitSelf: false,
   keywordHit: false, hasBackdrop: false, scrollLockNearby: false,
 };
 
@@ -75,8 +75,30 @@ test("high z alone does not reach threshold", () => {
 test("preexisting page furniture needs intent signals (dialog/keyword)", () => {
   const appShell = { ...base, preexisting: true, viewportCoverage: 0.95, scrollLockNearby: true, hasTextInput: true };
   assert.equal(S.shouldBlock(appShell), false);
-  assert.equal(S.shouldBlock({ ...appShell, keywordHit: true }), true);
+  assert.equal(S.shouldBlock({ ...appShell, keywordHit: true, keywordHitSelf: true }), true);
   assert.equal(S.shouldBlock({ ...appShell, hasDialogSemantics: true }), true);
+});
+
+test("video players are immune: contains video, no text input", () => {
+  const player = { ...base, hasVideo: true, scrollLockNearby: true, hasDialogSemantics: true, viewportCoverage: 0.9 };
+  assert.equal(S.passesHardGates(player), false);
+});
+
+test("video immunity yields to a text input (video inside a signup modal)", () => {
+  const promo = { ...base, hasVideo: true, hasTextInput: true, hasBackdrop: true };
+  assert.equal(S.shouldBlock(promo), true);
+});
+
+test("preexisting gate needs the keyword on the element itself, not a child", () => {
+  const furniture = { ...base, preexisting: true, keywordHit: true, keywordHitSelf: false, textInputFocused: true };
+  assert.equal(S.passesHardGates(furniture), false);
+  assert.equal(S.passesHardGates({ ...furniture, keywordHitSelf: true }), true);
+});
+
+test("preexisting full-screen wall with deep dialog semantics is blockable", () => {
+  const wall = { ...base, preexisting: true, viewportCoverage: 1, widthFraction: 1, heightFraction: 1,
+    hasDialogSemantics: true, zIndex: 20 };
+  assert.equal(S.shouldBlock(wall), true); // dialog 2 + fullscreen 1 = 3
 });
 
 test("invisible or transparent candidates fail gates", () => {

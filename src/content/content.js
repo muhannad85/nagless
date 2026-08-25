@@ -162,7 +162,8 @@
 
     const zIndex = Number.isNaN(parseInt(cs.zIndex, 10)) ? null : parseInt(cs.zIndex, 10);
     const backdropEl = findBackdrop(el, vw, vh);
-    const classText = `${el.id} ${String(el.className)} ${childClassText(el)}`;
+    const selfText = `${el.id} ${String(el.className)}`;
+    const active = document.activeElement;
 
     const candidate = {
       uninvited: S.isUninvited(appearedTs, state.lastGestureTs),
@@ -178,15 +179,34 @@
       zIndex,
       hasDialogSemantics:
         el.matches('dialog,[role="dialog"],[role="alertdialog"],[aria-modal="true"]') ||
-        el.querySelector(':scope > dialog, :scope > [role="dialog"], :scope > [aria-modal="true"]') !== null,
+        hasVisibleDialogDescendant(el),
       hasTextInput: el.querySelector('input[type="email"], input[type="text"], input:not([type]), textarea') !== null,
-      autofocusSeen: el.contains(document.activeElement) && document.activeElement !== document.body,
-      keywordHit: S.keywordHit(classText),
+      textInputFocused:
+        active instanceof Element && el.contains(active) &&
+        active.matches('input[type="email"], input[type="text"], input:not([type]), textarea, [contenteditable="true"]'),
+      hasVideo: el.querySelector("video") !== null,
+      keywordHit: S.keywordHit(`${selfText} ${childClassText(el)}`),
+      keywordHitSelf: S.keywordHit(selfText),
       hasBackdrop: backdropEl !== null,
       scrollLockNearby: lockNearby(appearedTs),
     };
 
     if (S.shouldBlock(candidate)) block(el, backdropEl);
+  }
+
+  function hasVisibleDialogDescendant(el) {
+    // Login/consent walls often nest role="dialog" a few levels inside a
+    // plain fixed container (Instagram's logged-out wall). Only *visible*
+    // dialogs count — app shells routinely hold hidden dialog templates.
+    const matches = el.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"], [aria-modal="true"]');
+    let checked = 0;
+    for (const d of matches) {
+      if (checked >= 3) break;
+      checked += 1;
+      const dcs = getComputedStyle(d);
+      if (dcs.display !== "none" && dcs.visibility === "visible") return true;
+    }
+    return false;
   }
 
   function childClassText(el) {

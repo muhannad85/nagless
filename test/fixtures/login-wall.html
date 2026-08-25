@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logged-out wall (must block)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  /* Instagram-shaped: full-screen fixed container from load, obfuscated class
+     names, the role=dialog card nested two wrappers deep */
+  .x1ey2m1c { position: fixed; inset: 0; z-index: 20; }
+  .x9f619 { position: absolute; inset: 0; background: rgba(0,0,0,.65); }
+  .xjbqb8w { position: relative; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .x1lliihq { background: #1c1c24; color: #f4f5f7; border-radius: 12px; padding: 32px; width: min(88vw, 420px); text-align: center; }
+  .x1lliihq button { background: #4f46e5; border: 0; color: #fff; border-radius: 8px; padding: 12px 24px; font: inherit; margin-top: 16px; }
+</style></head><body>
+<div id="nag" class="x1ey2m1c xdj266r">
+  <div class="x9f619"></div>
+  <div class="xjbqb8w">
+    <div class="x1lliihq" role="dialog">
+      <h2>See more from this account</h2>
+      <p>Log in to keep browsing.</p>
+      <button>Log in</button>
+    </div>
+  </div>
+</div>
+<h1>Profile page</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+</body></html>

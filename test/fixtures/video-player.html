@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sticky video player (must keep)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; padding-top: 30vh; }
+  /* YouTube-mobile-shaped: fixed full-width player, ~26% of viewport, present from load */
+  #player { position: fixed; top: 0; left: 0; width: 100%; height: 26vh; background: #000; z-index: 2; }
+  #player video { width: 100%; height: 100%; }
+  .player-control-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .player-control-overlay button { font-size: 28px; background: rgba(0,0,0,.5); color: #fff; border: 0; border-radius: 50%; width: 64px; height: 64px; }
+</style></head><body>
+<div id="player" class="player-container sticky-player">
+  <video muted playsinline></video>
+  <div class="player-control-overlay"><button id="play-btn" aria-label="Play">▶</button></div>
+</div>
+<h1>Sticky video player</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+  // Media players focus their controls programmatically (as YouTube does).
+  setTimeout(() => document.getElementById("play-btn").focus(), 1000);
+</script>
+</body></html>
