@@ -62,7 +62,8 @@ Stores want 1280×800 (CWS) / any reasonable size (AMO). Take from fixtures via 
 2. Full gate: `npm ci && npm test && npm run lint && npm run e2e`.
 3. `git tag v<version>` on the release commit; push with `--tags`.
 4. `npm run build` → upload `dist/nagless-firefox-<version>.zip` to AMO, `dist/nagless-chrome-<version>.zip` to CWS.
-5. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
+5. **Clean-zip check (always, before any upload):** `unzip -l dist/*.zip | grep -i "ds_store\|thumbs.db\|desktop.ini"` must return nothing. The build filters OS junk since 1.0.1, but verify anyway — a stray file in the zip draws an AMO validator warning.
+6. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
 
 ## 7. Installing on a personal Android phone before store approval
 
