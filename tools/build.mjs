@@ -12,7 +12,11 @@ for (const target of ["firefox", "chrome"]) {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")); // validates JSON
   const out = join(dist, target);
   mkdirSync(out, { recursive: true });
-  cpSync(join(root, "src"), out, { recursive: true });
+  const JUNK = new Set([".DS_Store", "Thumbs.db", "desktop.ini"]);
+  cpSync(join(root, "src"), out, {
+    recursive: true,
+    filter: (s) => !JUNK.has(s.split("/").pop()),
+  });
   cpSync(manifestPath, join(out, "manifest.json"));
   const zipName = `nagless-${target}-${manifest.version}.zip`;
   const zip = spawnSync("zip", ["-r", "-X", "-q", join(dist, zipName), "."], { cwd: out });
