@@ -28,7 +28,7 @@ Modern websites interrupt reading with *uninvited* overlays: newsletter sign-up 
 
 - Scroll-triggered, timed, and exit-intent modal overlays (newsletter/signup/promo/app-install nags).
 - The dimmed backdrop that accompanies them.
-- The page scroll-lock they impose (`overflow:hidden` and `body{position:fixed}` variants), with scroll position restored.
+- The page scroll-lock they impose, in both forms: the CSS variants (`overflow:hidden`, `body{position:fixed}`), with scroll position restored, and the behavioral variant where the page swallows scroll gestures with a non-passive `wheel`/`touchmove` handler.
 - The autofocused input inside a blocked overlay: focus is blurred so the mobile keyboard dismisses/never appears.
 - Full-sheet cookie/consent walls **when they match the same behavioral profile** (uninvited + overlay + lock/backdrop). Small non-blocking banners are left alone. Per-site switch is the escape hatch for sites that gate content on consent.
 
@@ -109,7 +109,8 @@ A **block event** groups: the overlay element(s), any associated backdrop, and t
 2. If `document.activeElement` is inside a hidden element: `blur()` it (dismisses the Android keyboard).
 3. Undo the scroll-lock: restore recorded prior inline `overflow`/`overflow-y` on `html`/`body`; for the `body{position:fixed; top:-Npx}` pattern, restore position and `scrollTo` the recorded offset.
 4. Watch (via the existing attribute observer) for the site re-asserting the lock for `REASSERT_WINDOW_MS = 3000`; re-unlock, bounded.
-5. Report the event to the background (badge/counters, §7) and show the undo chip (§6).
+5. Install the **scroll shield** for the rest of the page load. Some sites lock scrolling with behavior rather than CSS: a non-passive `wheel`/`touchmove` listener on `document` that calls `preventDefault()` while a modal is flagged open, cleared only by the site's own dismiss control (x.com's sign-up wall). Hiding the modal leaves that guard armed. A content script cannot see or remove a page listener across the isolated world, so Nagless listens in the bubble phase — after the page's handler — and scrolls the document by the vertical delta of exactly the gestures the page swallowed (`event.defaultPrevented`). A page that never prevents is never touched; horizontal deltas are left alone so carousels and sliders keep working.
+6. Report the event to the background (badge/counters, §7) and show the undo chip (§6).
 
 Caps against pathological sites: max `10` block events per page load; per element-signature, after `3` re-blocks the element stays hidden silently (no new chip, no counter spam).
 
@@ -219,7 +220,7 @@ Dev dependencies only: `web-ext` (lint / desktop & Android run / AMO sign), `@pl
 
 1. **Unit** (`node --test`): scoring weights and gates as pure functions on synthetic candidate descriptors; hostname normalization; grouping/caps logic.
 2. **Fixtures** (each a standalone page): scroll-triggered newsletter modal (+backdrop +`overflow` lock); timed interstitial; `body{position:fixed}` lock variant; autofocus-email modal (keyboard case); display-toggle modal pre-existing in DOM; SPA-style late injection; small cookie banner (must NOT block); **user-opened modal via button (must NOT block)**.
-3. **E2E** (Playwright, CI): chromium with `--load-extension=dist/chrome`, fixtures over local HTTP. Asserts: nag hidden, backdrop hidden, scroll unlocked & position kept, focused input blurred, legit modal untouched, undo restores and pauses.
+3. **E2E** (Playwright, CI): chromium with `--load-extension=dist/chrome`, fixtures over local HTTP. Asserts: nag hidden, backdrop hidden, scroll unlocked & position kept, focused input blurred, legit modal untouched, undo restores and pauses. Scroll assertions must drive a real `page.mouse.wheel` gesture: `window.scrollTo` bypasses a page's wheel guard and passes even when scrolling is dead.
 4. **Manual desktop:** `web-ext run` (Firefox), `chrome://extensions` load-unpacked; popup toggles, allowlist live-reactivity, badge.
 5. **Manual Android (the gate before publishing):** `web-ext run -t firefox-android --adb-device <id> --firefox-apk org.mozilla.firefox` against release Firefox for Android (phone: USB debugging + Firefox "Remote debugging via USB"; host: adb). Verify on fixtures + a list of real offender sites: nag gone, **no keyboard popup**, scrolling intact, undo chip tappable, popup usable as bottom sheet.
 6. **Pre-submission:** `web-ext lint` clean on `dist/firefox`; package size sanity (< 100 KB).

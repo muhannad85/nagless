@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nagless",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Hides uninvited popups — newsletter nags, scroll-triggered overlays, timed interstitials. Unlocks scrolling and dismisses the keyboard they pop open.",
   "browser_specific_settings": {
     "gecko": {

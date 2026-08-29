@@ -23,6 +23,7 @@
     preexisting: new WeakSet(),  // Elements visible at injection time
     hidden: new Map(),           // Element -> {value, priority} prior inline display
     unlockRestores: [],          // [{el, prop, value, priority}] prior inline values we overrode
+    removeShield: null,          // teardown for the gesture-level scroll shield
     signatures: new Map(),       // signature -> block count
     events: 0,
     queue: new Set(),
@@ -349,6 +350,7 @@
     for (const t of targets) hideEl(t);
     if (isDialogWall) sweepDetachedDims(targets);
     unlockScroll();
+    installScrollShield();
     state.reassertUntil = now() + C.REASSERT_WINDOW_MS;
 
     if (!silent) {
@@ -420,6 +422,42 @@
     if (scrollTarget !== null) window.scrollTo(0, scrollTarget);
   }
 
+  // Some sites lock scrolling with behaviour rather than CSS: a non-passive
+  // wheel/touchmove listener on document that calls preventDefault() while a
+  // modal is "open", cleared only by the site's own dismiss control (x.com's
+  // sign-up wall). Hiding the modal leaves that guard armed and the page
+  // frozen. A content script cannot see or remove a page listener across the
+  // isolated world, so we listen after it and scroll by hand for exactly the
+  // gestures it swallowed. A page that never prevents is never touched.
+  function installScrollShield() {
+    if (state.removeShield) return;
+    let lastY = null;
+
+    const onWheel = (e) => {
+      if (!e.defaultPrevented) return;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      window.scrollBy(0, e.deltaY * unit);
+    };
+    const onTouchStart = (e) => { lastY = e.touches.length === 1 ? e.touches[0].clientY : null; };
+    const onTouchMove = (e) => {
+      if (lastY === null || e.touches.length !== 1) return;
+      const y = e.touches[0].clientY;
+      if (e.defaultPrevented) window.scrollBy(0, lastY - y);
+      lastY = y; // tracked through unprevented moves too, so the next delta is right
+    };
+    const onTouchEnd = () => { lastY = null; };
+
+    const opts = { passive: true }; // bubble phase, so the page's guard has already run
+    const bound = [
+      ["wheel", onWheel], ["touchstart", onTouchStart], ["touchmove", onTouchMove],
+      ["touchend", onTouchEnd], ["touchcancel", onTouchEnd],
+    ];
+    for (const [type, fn] of bound) window.addEventListener(type, fn, opts);
+    state.removeShield = () => {
+      for (const [type, fn] of bound) window.removeEventListener(type, fn, opts);
+    };
+  }
+
   function override(el, prop, value) {
     state.unlockRestores.push({
       el, prop,
@@ -437,6 +475,8 @@
       restoreProp(el, prop, { value, priority });
     }
     state.unlockRestores = [];
+    state.removeShield?.();
+    state.removeShield = null;
     removeChip();
   }
 
