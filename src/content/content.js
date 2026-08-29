@@ -6,6 +6,10 @@
   const C = S.CONFIG;
   const OWN_ATTR = "data-nagless-ui";
   const CANDIDATE_TAGS = new Set(["DIV", "SECTION", "ASIDE", "DIALOG", "FORM", "ARTICLE"]);
+  const DIALOG_SELECTOR = 'dialog, [role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+  const NAG_SELECTOR = [
+    "modal", "popup", "overlay", "interstitial", "newsletter", "subscribe", "signup", "paywall",
+  ].flatMap((k) => [`[class*="${k}" i]`, `[id*="${k}" i]`]).join(", ");
 
   const state = {
     armed: false,
@@ -109,9 +113,12 @@
     for (const el of roots) collectCandidates(el, candidates);
     // Evaluate modal cards before near-fullscreen elements: blocking a
     // backdrop first would zero its rect and rob its card of the backdrop
-    // signal. Cards blocked first take their backdrop down with them.
-    const ordered = [...candidates].sort((a, b) => quickArea(a) - quickArea(b));
-    for (const el of ordered) evaluate(el);
+    // signal. Cards blocked first take their backdrop down with them. The
+    // ordering read costs a layout query per candidate, so only sort when
+    // the batch is small enough for that to be free.
+    const list = [...candidates];
+    if (list.length <= C.MAX_SORTED_CANDIDATES) list.sort((a, b) => quickArea(a) - quickArea(b));
+    for (const el of list) evaluate(el);
     pruneRecent();
   }
 
@@ -124,12 +131,37 @@
     if (!(root instanceof Element) || !root.isConnected) return;
     if (root.closest(`[${OWN_ATTR}]`)) return;
     consider(root, out);
+    // Dialog semantics are cheap to query and the strongest overlay signal,
+    // so always look for them at any depth.
+    addMatching(root, DIALOG_SELECTOR, out);
+    // Generic pass: budgeted walk for overlays with no semantic hint.
+    // Bounded by nodes visited and candidates produced, since each candidate
+    // costs a style and layout read during evaluation.
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
     let visited = 0;
-    for (let el = walker.nextNode(); el && visited < C.MAX_TRAVERSAL_NODES; el = walker.nextNode()) {
+    let el = walker.nextNode();
+    for (; el && visited < C.MAX_TRAVERSAL_NODES; el = walker.nextNode()) {
       visited += 1;
       consider(el, out);
     }
+    // A non-null el here means this subtree still had nodes when the walk ran
+    // out of budget — only then can a nag lie unseen beyond it (X.com puts
+    // its sign-up wall past element 1500 of the page). The attribute-substring
+    // query costs roughly 30x the walk, so it must never run on the hundreds
+    // of small roots an SPA emits per frame.
+    if (el) addMatching(root, NAG_SELECTOR, out);
+  }
+
+  function addMatching(root, selector, out) {
+    try {
+      if (root.matches(selector)) out.add(root);
+      let n = 0;
+      for (const el of root.querySelectorAll(selector)) {
+        if (n >= C.MAX_TARGETED_MATCHES) break;
+        n += 1;
+        out.add(el);
+      }
+    } catch { /* malformed selector on exotic engines: skip */ }
   }
 
   function consider(el, out) {

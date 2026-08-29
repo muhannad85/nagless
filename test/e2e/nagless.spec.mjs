@@ -108,6 +108,15 @@ test("app-shell wall (relative layer + detached fixed dim) is fully cleared", as
   await page.close();
 });
 
+test("wall deep in a large DOM is found (discovery is not truncated)", async () => {
+  const page = await openFixture("deep-dom-wall");
+  await nagAppears(page, 3000);
+  const count = await page.evaluate(() => document.querySelectorAll("*").length);
+  expect(count).toBeGreaterThan(1400); // fixture really is SPA-sized
+  await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+  await page.close();
+});
+
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");
   await page.waitForTimeout(2500); // outlives the 1s programmatic focus

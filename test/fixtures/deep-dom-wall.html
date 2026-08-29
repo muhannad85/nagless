@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wall deep in a large DOM (must block)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  /* X-shaped: full-viewport fixed wall with role=dialog, modest z-index,
+     sitting past element ~1400 in document order (SPA-sized DOM). */
+  #nag { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
+  #nag .veil { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+  #nag .card { position: relative; background: #16181c; color: #e7e9ea; border-radius: 16px;
+               padding: 28px; width: min(88vw, 380px); text-align: center; }
+  #nag button { background: #4f46e5; border: 0; color: #fff; border-radius: 999px;
+                padding: 12px 28px; font: inherit; font-weight: 600; margin-top: 14px; }
+</style></head><body>
+<h1>Deep DOM wall</h1>
+<script>
+  // Build a large SPA-sized DOM synchronously during parse, so it exists
+  // before document_idle — the wall below therefore sits far past any
+  // fixed-size traversal budget.
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < 700; i += 1) {
+    const p = document.createElement("p");
+    const s = document.createElement("span");
+    s.textContent = `Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall.`;
+    p.appendChild(s);
+    frag.appendChild(p);
+  }
+  document.body.appendChild(frag);
+</script>
+<div id="nag" role="dialog">
+  <div class="veil"></div>
+  <div class="card">
+    <h2>Don't miss what's happening</h2>
+    <p>People on this site are the first to know.</p>
+    <button>Sign up</button>
+  </div>
+</div>
+</body></html>

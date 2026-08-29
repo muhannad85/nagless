@@ -1,6 +1,6 @@
 {
   "name": "nagless",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Popup & nag blocker — hides uninvited overlays, unlocks scrolling, dismisses the keyboard.",
   "license": "MIT",
