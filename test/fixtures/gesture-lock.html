@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gesture-level scroll lock</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  .wall { position: fixed; inset: 0; z-index: 9999; background: rgba(15,17,26,.92); color: #fff;
+          display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; color: #111; border-radius: 12px; padding: 24px; width: min(88vw, 420px); }
+</style></head><body>
+<h1>Gesture-level scroll lock</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  // X.com's technique: no CSS lock anywhere. A capture-phase, non-passive
+  // listener on document swallows every scroll gesture while the wall is
+  // "open", and only the site's own dismiss control clears that flag.
+  let open = false;
+  const swallow = (e) => { if (open) e.preventDefault(); };
+  document.addEventListener("wheel", swallow, { capture: true, passive: false });
+  document.addEventListener("touchmove", swallow, { capture: true, passive: false });
+
+  setTimeout(() => {
+    const wall = document.createElement("div");
+    wall.className = "wall"; wall.id = "nag";
+    wall.setAttribute("role", "dialog"); wall.setAttribute("aria-modal", "true");
+    wall.innerHTML = '<div class="card"><h2>Sign up to keep reading</h2>' +
+      '<input type="email" placeholder="Email"><button id="dismiss" type="button">Dismiss</button></div>';
+    wall.querySelector("#dismiss").addEventListener("click", () => { open = false; wall.remove(); });
+    document.body.append(wall);
+    open = true;
+  }, 1200);
+</script>
+</body></html>

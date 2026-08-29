@@ -117,6 +117,18 @@ test("wall deep in a large DOM is found (discovery is not truncated)", async () 
   await page.close();
 });
 
+test("gesture-level scroll lock is neutralized (real wheel, not scrollTo)", async () => {
+  const page = await openFixture("gesture-lock");
+  await nagAppears(page, 4000);
+  await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+  // window.scrollTo bypasses the page's wheel guard entirely, so it would pass
+  // even with scrolling dead. Only a dispatched gesture proves the fix.
+  await page.mouse.move(200, 400);
+  await page.mouse.wheel(0, 600);
+  await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 }).toBeGreaterThan(200);
+  await page.close();
+});
+
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");
   await page.waitForTimeout(2500); // outlives the 1s programmatic focus
