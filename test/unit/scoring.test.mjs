@@ -8,7 +8,7 @@ const base = {
   position: "fixed", visible: true, opacity: 1,
   viewportCoverage: 0.5, widthFraction: 0.7, heightFraction: 0.7,
   zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, textInputFocused: false, hasVideo: false, keywordHitSelf: false,
-  coversViewport: false, positioned: false,
+  coversViewport: false, positioned: false, dialogShare: 1,
   keywordHit: false, hasBackdrop: false, scrollLockNearby: false,
 };
 
@@ -82,9 +82,29 @@ test("preexisting page furniture needs intent signals (dialog/keyword)", () => {
 
 test("positioned viewport-covering layer with dialog qualifies without position:fixed", () => {
   const wall = { ...base, position: "relative", positioned: true, coversViewport: true,
-    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true, zIndex: 3 };
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true, zIndex: 3,
+    dialogShare: 0.73 }; // measured on Instagram's real desktop wall wrapper
   assert.equal(S.passesHardGates(wall), true);
   assert.equal(S.shouldBlock(wall), true); // dialog 2 + fullscreen 1 = 3
+});
+
+test("app content root that merely contains a dialog is exempt (blank-page bug)", () => {
+  // Same shape as the wall above; the only difference is that the dialog is a
+  // small part of it. Measured on an Instagram profile: 0.07 for the content
+  // root that holds the whole page, against 0.61+ for the real wall wrappers.
+  const contentRoot = { ...base, position: "relative", positioned: true, coversViewport: true,
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true, zIndex: 0,
+    dialogShare: 0.07 };
+  assert.equal(S.passesHardGates(contentRoot), false);
+});
+
+test("dialog share never gates a position:fixed wall", () => {
+  // The share test exists only for the app-shell branch; a fixed full-screen
+  // interstitial may legitimately be mostly artwork.
+  const fixedWall = { ...base, position: "fixed", coversViewport: true,
+    viewportCoverage: 1, widthFraction: 1, heightFraction: 1, hasDialogSemantics: true,
+    dialogShare: 0.02 };
+  assert.equal(S.passesHardGates(fixedWall), true);
 });
 
 test("static viewport-covering layer never qualifies, even with a dialog", () => {

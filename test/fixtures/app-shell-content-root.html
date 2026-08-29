@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App-shell wall inside a content root (must not blank the page)</title>
+<style>
+  /* Instagram-profile-shaped. #approot is position:relative and covers the
+     viewport, and it holds the entire page, so it satisfies "positioned,
+     viewport-covering, carries a visible dialog" while being the last thing
+     that should ever be hidden. The real wall is the fixed layer inside it. */
+  html, body { margin: 0; font: 17px/1.6 system-ui, sans-serif; }
+  #approot { position: relative; z-index: 0; min-height: 100vh; width: 100%; }
+  #approot .inner { max-width: 40em; margin: 0 auto; padding: 1em; }
+  #approot img { width: 96px; height: 96px; border-radius: 8px; margin: 2px; }
+  #wall { position: fixed; inset: 0; z-index: 20; display: flex;
+          align-items: center; justify-content: center; background: rgba(0,0,0,.65); }
+  .sheet { background: #fff; border-radius: 12px; padding: 20px; width: min(88vw, 400px); }
+</style></head><body>
+<div id="approot" class="x9f619 x1n2onr6 x1ja2u2z">
+  <div class="inner">
+    <h1>galromaani</h1>
+    <p id="bio">147K followers · 264 following · Classes, programs and other honest page content.</p>
+    <div id="grid"></div>
+    <div id="content"></div>
+  </div>
+  <div class="html-div xdj266r" id="wall">
+    <div class="x1uvtmcs x4k7w5x"><div class="x1qjc9v5 x9f619"><div class="x1cy8zhl x9f619">
+      <div id="nag" class="x1ja2u2z x1afcbsf" role="dialog">
+        <div class="sheet">
+          <h2>Log in to keep browsing</h2>
+          <p>See photos and videos from this account.</p>
+          <button type="button">Log in</button>
+        </div>
+      </div>
+    </div></div></div>
+  </div>
+</div>
+<script>
+  // Roughly the node counts measured on a real profile: ~290 in the content
+  // root against ~21 in the dialog, a dialog share near 0.07.
+  document.getElementById("grid").innerHTML =
+    Array.from({length: 14}, (_, i) => `<img alt="post ${i + 1}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%23c7c9d1'/%3E%3C/svg%3E">`).join("");
+  document.getElementById("content").innerHTML =
+    Array.from({length: 40}, (_, i) => `<p><span>Paragraph ${i + 1}.</span> Honest page content that must survive the block, tall enough to scroll.</p>`).join("");
+</script>
+</body></html>

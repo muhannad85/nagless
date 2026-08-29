@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nagless",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Hides uninvited popups — newsletter nags, scroll-triggered overlays, timed interstitials. Unlocks scrolling and dismisses the keyboard they pop open.",
   "minimum_chrome_version": "121",
   "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "96": "icons/icon-96.png", "128": "icons/icon-128.png" },

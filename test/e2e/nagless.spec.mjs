@@ -129,6 +129,23 @@ test("gesture-level scroll lock is neutralized (real wheel, not scrollTo)", asyn
   await page.close();
 });
 
+test("wall inside a content root is hidden without blanking the page", async () => {
+  const page = await openFixture("app-shell-content-root");
+  await nagAppears(page, 3000);
+  await expect(page.locator("#wall")).toBeHidden({ timeout: 5000 });
+  // The content root also reads as positioned + viewport-covering + carrying a
+  // dialog. Hiding it takes the whole page with it, which is the bug.
+  await expect(page.locator("#approot")).toBeVisible();
+  await expect(page.locator("#bio")).toBeVisible();
+  const shown = await page.evaluate(() => ({
+    text: (document.body.innerText || "").trim().length,
+    imgs: [...document.images].filter((i) => i.getBoundingClientRect().width > 30).length,
+  }));
+  expect(shown.text).toBeGreaterThan(200);
+  expect(shown.imgs).toBe(14);
+  await page.close();
+});
+
 test("gesture lock over an app shell scrolls the inner container", async () => {
   const page = await openFixture("app-shell-gesture-lock");
   await nagAppears(page, 4000);

@@ -18,6 +18,7 @@ var NaglessScoring = (() => {
     MAX_SORTED_CANDIDATES: 120,
     MIN_AREA_FRACTION: 0.25,
     WALL_MIN_DIM_FRACTION: 0.9,
+    WALL_MIN_DIALOG_SHARE: 0.5,
     SIGNAL_MIN_AREA_FRACTION: 0.08,
     SHEET_MIN_WIDTH_FRACTION: 0.9,
     SHEET_MIN_HEIGHT_FRACTION: 0.2,
@@ -38,8 +39,12 @@ var NaglessScoring = (() => {
       c.position === "fixed" || c.position === "sticky" ||
       // App-shell walls (Instagram desktop): when the page scrolls an inner
       // container, a positioned viewport-covering layer carrying a visible
-      // dialog is an overlay without ever being position:fixed.
-      (c.coversViewport && c.positioned && c.hasDialogSemantics);
+      // dialog is an overlay without ever being position:fixed. The dialog
+      // must dominate the layer, or the app's own content root qualifies too:
+      // on an Instagram profile the wall wrappers measure 0.61 to 0.96 while
+      // the content root measures 0.07, and hiding that root blanks the page.
+      (c.coversViewport && c.positioned && c.hasDialogSemantics &&
+        c.dialogShare >= CONFIG.WALL_MIN_DIALOG_SHARE);
     if (!overlayPositioned) return false;
     if (!c.visible || c.opacity <= CONFIG.MIN_OPACITY) return false;
     // Video players are content, not nags: an element carrying a <video> and

@@ -201,6 +201,10 @@
     const backdropEl = findBackdrop(el, vw, vh);
     const selfText = `${el.id} ${String(el.className)}`;
     const active = document.activeElement;
+    const dialogSemantics = el.matches(DIALOG_SELECTOR) || hasVisibleDialogDescendant(el);
+    // dialogShare costs a subtree count, so only pay it where the app-shell
+    // branch of the positioning gate can consult it (spec §5.4 G2).
+    const appShellBranch = !fixedish && coversViewport && dialogSemantics;
 
     const candidate = {
       uninvited: S.isUninvited(appearedTs, state.lastGestureTs),
@@ -214,9 +218,8 @@
       widthFraction: interW / (vw || 1),
       heightFraction: interH / (vh || 1),
       zIndex,
-      hasDialogSemantics:
-        el.matches('dialog,[role="dialog"],[role="alertdialog"],[aria-modal="true"]') ||
-        hasVisibleDialogDescendant(el),
+      hasDialogSemantics: dialogSemantics,
+      dialogShare: appShellBranch ? dialogShareOf(el) : 1,
       hasTextInput: el.querySelector('input[type="email"], input[type="text"], input:not([type]), textarea') !== null,
       textInputFocused:
         active instanceof Element && el.contains(active) &&
@@ -246,6 +249,26 @@
       if (dcs.display !== "none" && dcs.visibility === "visible") return true;
     }
     return false;
+  }
+
+  // How much of this element *is* its dialog, by node count. A wall wrapper is
+  // little more than the dialog it carries; an app's content root merely
+  // happens to contain one. On an Instagram profile the wall wrappers measure
+  // 0.61 to 0.96 and the content root measures 0.07, and hiding that root
+  // blanks the page.
+  function dialogShareOf(el) {
+    if (el.matches(DIALOG_SELECTOR)) return 1;
+    const own = el.querySelectorAll("*").length + 1;
+    let dialogNodes = 0;
+    let checked = 0;
+    for (const d of el.querySelectorAll(DIALOG_SELECTOR)) {
+      if (checked >= 3) break;
+      checked += 1;
+      const dcs = getComputedStyle(d);
+      if (dcs.display === "none" || dcs.visibility !== "visible") continue;
+      dialogNodes += d.querySelectorAll("*").length + 1;
+    }
+    return Math.min(1, dialogNodes / own); // nested dialogs must not exceed the whole
   }
 
   function childClassText(el) {

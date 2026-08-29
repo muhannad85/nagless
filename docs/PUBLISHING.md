@@ -90,6 +90,17 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 - Validator: 0 errors, 2 warnings — `data_collection_permissions` is only understood from Firefox 140 (desktop) / 142 (Android), below our 121 floor. Resolved by raising `strict_min_version` to 140.0 / 142.0; `web-ext lint` clean; re-uploaded `nagless-firefox-1.0.0.zip`.
 - **Submitted to AMO as listed version 1.0.0 on 2026-08-22** (source-code question: No — zip is literal source). Awaiting automated publication / possible manual review. Git tag `v1.0.0`.
 
+### 2026-08-29 — v1.0.5: Instagram profile went blank after a block
+
+- **Reported (owner, Firefox for Android, 1.0.4 on-device):** on `instagram.com/<profile>` while logged out, the overlay was blocked and the whole page went black. Undo, then closing the wall by hand, restored it.
+- **Not a 1.0.4 regression.** 1.0.3 reproduces identically; 1.0.4 is purely additive scroll code. The defect dates to the 1.0.2 app-shell relaxation and only surfaces on profile pages whose DOM puts the wall inside the content root.
+- **Root cause:** G2's app-shell branch accepted *any* positioned, viewport-covering layer carrying a visible dialog, with no requirement that the dialog be most of it. Instagram's content root is positioned, covers the viewport, and contains the login dialog, so it qualified. Nagless hid it and took the entire page with it. The instrumented build logged exactly one hide, `DIV.x9f619 x1n2onr6 x1ja2u2z`, `position: relative`, 292 nodes, 53% of all elements on the page, after which `innerText` was empty and every hit-test point returned `BODY`. The black is Instagram's dark-theme body showing through.
+- **Discriminator (measured up the dialog's ancestor chain, both profiles and both layouts):** the dialog's share of the element's own node count. Real wall wrappers score 0.61 to 0.96, the content root scores 0.07 and `<body>` scores 0.03 to 0.05. A threshold of 0.5 sits in a wide empty gap.
+- **Fix:** the app-shell branch of G2 now also requires `dialogShare >= 0.5`. The share is computed lazily, only for candidates that reach that branch, so the subtree count never runs on the hot path, and it is never consulted for a `fixed`/`sticky` overlay, which may legitimately be mostly artwork.
+- **Verified live (mobile + desktop, two profile URLs each).** Mobile now hides exactly the right element, the `position: fixed`, `z-index: 20` wall layer, and leaves the content root alone: visible text 305 → 212 and images 14 → 13 (the wall's own text and logo), against 0 and 0 before the fix. Desktop still hides the 1.0.2 targets, two `x1n2onr6 xzkaem6` wrappers at 3-4% page share plus the detached dim, with text 1238 → 1132 and images 26 → 25. Screenshots: pre-fix is a fully black viewport, post-fix is the complete profile with no wall.
+- **Regression fixture:** `app-shell-content-root.html` (BLOCK). Proven non-vacuous by running it against the 1.0.4 build, which gives `wallHidden=false approotHidden=true visibleText=0`, against `wallHidden=true approotHidden=false visibleText=3564` after the fix.
+- 28 unit + 19 e2e green, `web-ext lint` clean, both zips junk-free.
+
 ### 2026-08-29 — v1.0.4: page frozen after a block (gesture-level scroll locks)
 
 - **Reported:** after 1.0.3 correctly blocked the x.com sign-up wall, the page could not be scrolled. Undo followed by dismissing the wall manually restored scrolling.

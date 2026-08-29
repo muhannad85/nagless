@@ -82,7 +82,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 | Gate | Requirement |
 |---|---|
 | G1 Uninvited | §5.1 |
-| G2 Overlay positioning | Computed `position: fixed` or `sticky` |
+| G2 Overlay positioning | Computed `position: fixed` or `sticky`, **or** the app-shell form: any non-static position, covering ≥ 90% of both viewport dimensions, carrying a visible dialog that accounts for ≥ `WALL_MIN_DIALOG_SHARE = 0.5` of the element's own node count. The share requirement is what separates a wall wrapper from the app's content root, which is also positioned, also covers the viewport, and also contains the dialog — measured on an Instagram profile, wall wrappers score 0.61 to 0.96 and the content root scores 0.07. Hiding that root blanks the page. The share is never consulted for a `fixed`/`sticky` overlay, which may legitimately be mostly artwork. |
 | G3 Size | Covers ≥ 25% of viewport area, **or** is a sheet: width ≥ 90% of viewport width and height ≥ 20% of viewport height, **or** covers ≥ 8% while accompanied by a backdrop, a scroll-lock, or dialog semantics (a modest centered card with any of those still intercepts the whole page) |
 | G4 Visible | Rendered (`display` ≠ `none`, `visibility: visible`, opacity > 0.05) and intersects the viewport |
 | G5 Foreign | Not Nagless UI, not already processed |
