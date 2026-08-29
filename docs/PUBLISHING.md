@@ -64,7 +64,11 @@ Stores want 1280×800 (CWS) / any reasonable size (AMO). Take from fixtures via 
 3. `git tag v<version>` on the release commit; push with `--tags`.
 4. `npm run build` → upload `dist/nagless-firefox-<version>.zip` to AMO, `dist/nagless-chrome-<version>.zip` to CWS.
 5. **Clean-zip check (always, before any upload):** `unzip -l dist/*.zip | grep -i "ds_store\|thumbs.db\|desktop.ini"` must return nothing. The build filters OS junk since 1.0.1, but verify anyway — a stray file in the zip draws an AMO validator warning.
-6. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
+6. **Write the two submission texts (always, unprompted — they are required fields, so the version is not ready without them):**
+   - **Release Notes** (user-facing): what broke, what it looked like, what works now. No internals.
+   - **Notes to Reviewer** (private to AMO reviewers): lead with the permission delta, saying plainly when there is none; summarize the zip diff by file and line count; pre-empt anything that looks alarming out of context (new event listeners, new APIs) with when it is registered, when it is removed, and what data it touches; carry forward the standing facts (no bundler or minification so the zip is literal source, icons rendered from `assets/icon.svg`, zero network requests, `data_collection_permissions: none`); close with a reproduction recipe and the repo link.
+   - If the notes reference GitHub, push the release commits first or the reviewer follows a dead link.
+7. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
 
 ## 7. Installing on a personal Android phone before store approval
 
