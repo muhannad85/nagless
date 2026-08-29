@@ -2,7 +2,7 @@
 
 Nagless hides the overlays nobody asked for: newsletter sign-up modals, "get email alerts" nags, timed and scroll-triggered interstitials. It unlocks the page scroll they hijack and dismisses the mobile keyboard that their autofocused email fields pop open — the single most annoying variant on Firefox for Android.
 
-**Status:** in development, pre-release. Not yet on the stores.
+**Install:** [Nagless on addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/nagless/) — Firefox desktop and Firefox for Android. The Chrome Web Store listing is not up yet.
 
 ## How it works
 
@@ -14,10 +14,10 @@ Full behavior specification: [docs/SPEC.md](docs/SPEC.md).
 
 | Platform | Support |
 |---|---|
-| Firefox for Android | ✅ primary target (via addons.mozilla.org) |
-| Firefox desktop | ✅ |
-| Chrome desktop | ✅ (via Chrome Web Store) |
-| Edge desktop | ✅ (installs from Chrome Web Store) |
+| Firefox for Android | ✅ primary target — [listed on AMO](https://addons.mozilla.org/en-US/firefox/addon/nagless/) |
+| Firefox desktop | ✅ [listed on AMO](https://addons.mozilla.org/en-US/firefox/addon/nagless/) |
+| Chrome desktop | ✅ build supported — Chrome Web Store listing pending |
+| Edge desktop | ✅ build supported — installs from the Chrome Web Store once listed |
 | Chrome/Edge on Android | ❌ those browsers don't support extensions |
 
 Manifest V3 across the board. Minimum: Firefox 140 (Firefox for Android 142), Chrome 121.

@@ -61,14 +61,16 @@ Stores want 1280×800 (CWS) / any reasonable size (AMO). Take from fixtures via 
 
 1. Bump `version` in `manifest.firefox.json`, `manifest.chrome.json`, and `package.json` (keep all three identical).
 2. Full gate: `npm ci && npm test && npm run lint && npm run e2e`.
-3. `git tag v<version>` on the release commit; push with `--tags`.
+3. `git tag -s v<version> -m "Nagless <version> — <one line>"` on the release commit; `git verify-tag v<version>`; push with `--tags`. Tags are **always signed** — signing is SSH (`gpg.format=ssh`, `tag.gpgsign=true`), not GPG.
 4. `npm run build` → upload `dist/nagless-firefox-<version>.zip` to AMO, `dist/nagless-chrome-<version>.zip` to CWS.
 5. **Clean-zip check (always, before any upload):** `unzip -l dist/*.zip | grep -i "ds_store\|thumbs.db\|desktop.ini"` must return nothing. The build filters OS junk since 1.0.1, but verify anyway — a stray file in the zip draws an AMO validator warning.
 6. **Write the two submission texts (always, unprompted — they are required fields, so the version is not ready without them):**
    - **Release Notes** (user-facing): what broke, what it looked like, what works now. No internals.
    - **Notes to Reviewer** (private to AMO reviewers): lead with the permission delta, saying plainly when there is none; summarize the zip diff by file and line count; pre-empt anything that looks alarming out of context (new event listeners, new APIs) with when it is registered, when it is removed, and what data it touches; carry forward the standing facts (no bundler or minification so the zip is literal source, icons rendered from `assets/icon.svg`, zero network requests, `data_collection_permissions: none`); close with a reproduction recipe and the repo link.
    - If the notes reference GitHub, push the release commits first or the reviewer follows a dead link.
-7. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
+7. **Publish the GitHub Release (always, unprompted — a shipped version that isn't on the Releases page is invisible to anyone reading the repo):** `gh release create v<version> --verify-tag --title "Nagless <version>" --notes-file <file> --latest` (use `--latest=false` when backfilling an older version). Notes are user-facing in the same style as the AMO Release Notes — no internals, no diff stats, and no claim about store approval status, which is permanent and easy to get wrong. Attach binaries only on purpose: an unsigned zip on a release page reads as installable when the real distribution channel is the store.
+   - Force-updating a tag in place keeps its Release attached, but deleting and recreating a tag on the remote reverts that Release to a **draft** — after any history rewrite, confirm with `gh release list` that every release is still published and points at the new commit.
+8. Keep AMO and CWS versions identical; store listing text changes don't need a version bump.
 
 ## 7. Installing on a personal Android phone before store approval
 
