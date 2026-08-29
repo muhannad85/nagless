@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App-shell wall with a gesture-level scroll lock</title>
+<style>
+  /* Meta-shaped app shell: the document never scrolls, an inner container
+     does. Combined with a gesture guard, scrolling the document would be a
+     no-op, so the shield has to move the scroller the gesture is over. */
+  html, body { height: 100%; margin: 0; font: 18px/1.6 system-ui, sans-serif; }
+  #scrollview { height: 100vh; overflow-y: auto; padding: 1em; box-sizing: border-box; }
+  #scrollview .inner { max-width: 40em; margin: 0 auto; }
+  .wall { position: fixed; inset: 0; z-index: 9999; background: rgba(15,17,26,.92); color: #fff;
+          display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; color: #111; border-radius: 12px; padding: 24px; width: min(88vw, 420px); }
+</style></head><body>
+<div id="scrollview"><div class="inner">
+  <h1>App-shell profile behind a gesture lock</h1>
+  <div id="content"></div>
+</div></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  let open = false;
+  const swallow = (e) => { if (open) e.preventDefault(); };
+  document.addEventListener("wheel", swallow, { capture: true, passive: false });
+  document.addEventListener("touchmove", swallow, { capture: true, passive: false });
+
+  setTimeout(() => {
+    const wall = document.createElement("div");
+    wall.className = "wall"; wall.id = "nag";
+    wall.setAttribute("role", "dialog"); wall.setAttribute("aria-modal", "true");
+    wall.innerHTML = '<div class="card"><h2>Log in to keep browsing</h2>' +
+      '<input type="email" placeholder="Email"><button id="dismiss" type="button">Dismiss</button></div>';
+    wall.querySelector("#dismiss").addEventListener("click", () => { open = false; wall.remove(); });
+    document.body.append(wall);
+    open = true;
+  }, 1200);
+</script>
+</body></html>

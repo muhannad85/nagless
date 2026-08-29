@@ -99,10 +99,22 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
   - no extension, wall left up → `defaultPrevented=true`, `scrollY 0 → 0` (identical: hiding neither helps nor hurts)
   - no extension, wall closed via its own "Dismiss" button → `defaultPrevented=false`, `scrollY 0 → 1262`, listener still registered
 - **Fix — the scroll shield.** A content script cannot see or remove a page listener across the isolated world, and expando writes such as `event.preventDefault = noop` do not cross it either. So Nagless listens in the **bubble** phase, after the page's handler has run, and scrolls the document by the vertical delta of exactly the gestures the page swallowed (`event.defaultPrevented`). A page that never prevents is never touched. Vertical only, so horizontal carousels and sliders keep their gestures. Installed on the first block, torn down by `restoreAll()` (Undo, global toggle, allowlist).
+- **App-shell coverage (added after a "does this cover Meta too?" question).** The first cut of the shield called `window.scrollBy`, which is a no-op when the document is not the scroller. Instagram, Facebook and Threads all size `html`/`body` to the viewport and scroll an inner container, so the shield would have done nothing on any of them had they gesture-locked. Proved with `app-shell-gesture-lock.html` (failed before, passes after). The shield now scrolls the nearest scrollable ancestor of the gesture, resolved once per touch gesture and memoized per wheel target so the hot path costs no style reads.
+- **Scroll-lock technique by site (measured bare vs. with the extension, both profiles):**
+
+  | Site | Wall | Lock technique | Result with 1.0.4 |
+  |---|---|---|---|
+  | x.com (mobile) | yes | **gesture**, non-passive capture `touchmove`+`wheel` on `document` | blocked, document scrolled 0 → 769 |
+  | facebook.com (mobile) | yes | **CSS**, `cssLock=true` bare → `false` with the extension | blocked, `unlockScroll()` clears it (unchanged since 1.0.0) |
+  | instagram.com (mobile + desktop) | yes | **none**, `defaultPrevented=false`, no CSS lock | blocked; desktop inner scroller moved 0 → 700 |
+  | threads.com (desktop) | yes | **none** | blocked, inner scroller moved 0 → 700 |
+  | x.com (desktop) | — | — | not probeable, X refuses the automation's desktop profile |
+
+  So x.com is the only one of the four that needs the shield, Facebook was already covered by the CSS path, and Instagram and Threads never locked scrolling in the first place. The app-shell fix is insurance against any of them adopting the technique, and coverage for app-shell sites generally.
 - **Known UX limit:** compensated scrolling tracks the finger 1:1 with no inertia, so there is no fling on sites that swallow gestures. Native feel would require `stopPropagation()` in the capture phase, which would also rob the page of every legitimate drag handler. Revisit only if the phone test says the missing fling matters.
-- **Verified:** live x.com/NASA mobile — wall blocked and swipe moved `scrollY 0 → 769` (was 0). Instagram mobile + desktop — wall still blocked, desktop inner scroller moved 0 → 800 under a real wheel. YouTube mobile + desktop — untouched, video renders. 26 unit + 17 e2e green, `web-ext lint` clean, both zips junk-free. **Gap: x.com desktop still refuses the automation's desktop profile** (`ERR_HTTP_RESPONSE_CODE_FAILURE`); the fix keys on `defaultPrevented` rather than on anything layout-specific, and the new fixture's assertion drives a desktop wheel event.
+- **Verified:** live x.com/NASA mobile — wall blocked and swipe moved `scrollY 0 → 769` (was 0). Instagram mobile + desktop — wall still blocked, desktop inner scroller moved 0 → 800 under a real wheel. YouTube mobile + desktop — untouched, video renders. 26 unit + 18 e2e green, `web-ext lint` clean, both zips junk-free. **Gap: x.com desktop still refuses the automation's desktop profile** (`ERR_HTTP_RESPONSE_CODE_FAILURE`); the fix keys on `defaultPrevented` rather than on anything layout-specific, and the new fixture's assertion drives a desktop wheel event.
 - **Process rule (standing): a scroll assertion must drive a real gesture.** `window.scrollTo` bypasses a page's wheel/touchmove guard and passes even when scrolling is dead — every pre-1.0.4 scroll assertion was vacuous against this bug class.
-- New regression fixture: `gesture-lock.html` (BLOCK) — reproduces X's mechanism with no CSS lock at all.
+- New regression fixtures: `gesture-lock.html` (BLOCK) reproduces X's mechanism with no CSS lock at all, and `app-shell-gesture-lock.html` (BLOCK) puts the same guard over an inner-scroller app shell.
 
 ### 2026-08-29 — v1.0.3: overlays missed on large pages (X.com)
 

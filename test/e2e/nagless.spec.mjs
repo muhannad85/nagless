@@ -129,6 +129,18 @@ test("gesture-level scroll lock is neutralized (real wheel, not scrollTo)", asyn
   await page.close();
 });
 
+test("gesture lock over an app shell scrolls the inner container", async () => {
+  const page = await openFixture("app-shell-gesture-lock");
+  await nagAppears(page, 4000);
+  await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+  // The document is not the scroller here, so window.scrollBy would be a no-op.
+  await page.mouse.move(200, 400);
+  await page.mouse.wheel(0, 600);
+  await expect.poll(() => page.evaluate(() => document.getElementById("scrollview").scrollTop),
+    { timeout: 3000 }).toBeGreaterThan(200);
+  await page.close();
+});
+
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");
   await page.waitForTimeout(2500); // outlives the 1s programmatic focus

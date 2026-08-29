@@ -432,20 +432,28 @@
   function installScrollShield() {
     if (state.removeShield) return;
     let lastY = null;
+    let touchScroller = null;
+    let wheelTarget = null;
+    let wheelScroller = null;
 
     const onWheel = (e) => {
       if (!e.defaultPrevented) return;
+      if (e.target !== wheelTarget) { wheelTarget = e.target; wheelScroller = scrollerFor(e.target); }
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
-      window.scrollBy(0, e.deltaY * unit);
+      scrollByOn(wheelScroller, e.deltaY * unit);
     };
-    const onTouchStart = (e) => { lastY = e.touches.length === 1 ? e.touches[0].clientY : null; };
+    const onTouchStart = (e) => {
+      const single = e.touches.length === 1;
+      lastY = single ? e.touches[0].clientY : null;
+      touchScroller = single ? scrollerFor(e.target) : null; // resolved once, not per move
+    };
     const onTouchMove = (e) => {
       if (lastY === null || e.touches.length !== 1) return;
       const y = e.touches[0].clientY;
-      if (e.defaultPrevented) window.scrollBy(0, lastY - y);
+      if (e.defaultPrevented) scrollByOn(touchScroller, lastY - y);
       lastY = y; // tracked through unprevented moves too, so the next delta is right
     };
-    const onTouchEnd = () => { lastY = null; };
+    const onTouchEnd = () => { lastY = null; touchScroller = null; };
 
     const opts = { passive: true }; // bubble phase, so the page's guard has already run
     const bound = [
@@ -456,6 +464,25 @@
     state.removeShield = () => {
       for (const [type, fn] of bound) window.removeEventListener(type, fn, opts);
     };
+  }
+
+  // The document is not always the scroller. App shells (Instagram, Facebook,
+  // Threads) size html/body to the viewport and scroll an inner container, so
+  // window.scrollBy would be a no-op there. Resolve the scroller the gesture is
+  // actually over, exactly as the browser would have.
+  function scrollerFor(target) {
+    let el = target instanceof Element ? target : null;
+    for (let hops = 0; el && hops < 20; el = el.parentElement, hops += 1) {
+      if (el === document.body || el === document.documentElement) break;
+      if (el.scrollHeight <= el.clientHeight + 4) continue;
+      if (/auto|scroll|overlay/.test(getComputedStyle(el).overflowY)) return el;
+    }
+    return null; // the document
+  }
+
+  function scrollByOn(scroller, dy) {
+    if (scroller && scroller.isConnected) scroller.scrollTop += dy;
+    else window.scrollBy(0, dy);
   }
 
   function override(el, prop, value) {
