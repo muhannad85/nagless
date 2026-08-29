@@ -90,6 +90,20 @@ Append dated entries here after each manual QA pass (desktop + Android), listing
 - Validator: 0 errors, 2 warnings — `data_collection_permissions` is only understood from Firefox 140 (desktop) / 142 (Android), below our 121 floor. Resolved by raising `strict_min_version` to 140.0 / 142.0; `web-ext lint` clean; re-uploaded `nagless-firefox-1.0.0.zip`.
 - **Submitted to AMO as listed version 1.0.0 on 2026-08-22** (source-code question: No — zip is literal source). Awaiting automated publication / possible manual review. Git tag `v1.0.0`.
 
+### 2026-08-29 — v1.0.4: page frozen after a block (gesture-level scroll locks)
+
+- **Reported:** after 1.0.3 correctly blocked the x.com sign-up wall, the page could not be scrolled. Undo followed by dismissing the wall manually restored scrolling.
+- **Root cause (confirmed on live x.com/NASA, mobile profile):** X imposes no CSS scroll lock at all — `html`/`body` computed to `overflow: visible`, `position: static`, with no inline style, so `unlockScroll()` correctly found nothing and did nothing. The lock is behavioral: a **capture-phase, non-passive `wheel` + `touchmove` listener on `document`** that calls `preventDefault()` while the wall is flagged open. The listener is registered permanently and is cleared only by the site flipping its own open-flag. Hiding the wall left the guard armed.
+- **Evidence (three runs, synthesized swipe through the CDP input pipeline; sanity-checked against a plain tall page that scrolled to 2205):**
+  - extension blocks the wall → `defaultPrevented=true`, `scrollY 0 → 0`
+  - no extension, wall left up → `defaultPrevented=true`, `scrollY 0 → 0` (identical: hiding neither helps nor hurts)
+  - no extension, wall closed via its own "Dismiss" button → `defaultPrevented=false`, `scrollY 0 → 1262`, listener still registered
+- **Fix — the scroll shield.** A content script cannot see or remove a page listener across the isolated world, and expando writes such as `event.preventDefault = noop` do not cross it either. So Nagless listens in the **bubble** phase, after the page's handler has run, and scrolls the document by the vertical delta of exactly the gestures the page swallowed (`event.defaultPrevented`). A page that never prevents is never touched. Vertical only, so horizontal carousels and sliders keep their gestures. Installed on the first block, torn down by `restoreAll()` (Undo, global toggle, allowlist).
+- **Known UX limit:** compensated scrolling tracks the finger 1:1 with no inertia, so there is no fling on sites that swallow gestures. Native feel would require `stopPropagation()` in the capture phase, which would also rob the page of every legitimate drag handler. Revisit only if the phone test says the missing fling matters.
+- **Verified:** live x.com/NASA mobile — wall blocked and swipe moved `scrollY 0 → 769` (was 0). Instagram mobile + desktop — wall still blocked, desktop inner scroller moved 0 → 800 under a real wheel. YouTube mobile + desktop — untouched, video renders. 26 unit + 17 e2e green, `web-ext lint` clean, both zips junk-free. **Gap: x.com desktop still refuses the automation's desktop profile** (`ERR_HTTP_RESPONSE_CODE_FAILURE`); the fix keys on `defaultPrevented` rather than on anything layout-specific, and the new fixture's assertion drives a desktop wheel event.
+- **Process rule (standing): a scroll assertion must drive a real gesture.** `window.scrollTo` bypasses a page's wheel/touchmove guard and passes even when scrolling is dead — every pre-1.0.4 scroll assertion was vacuous against this bug class.
+- New regression fixture: `gesture-lock.html` (BLOCK) — reproduces X's mechanism with no CSS lock at all.
+
 ### 2026-08-29 — v1.0.3: overlays missed on large pages (X.com)
 
 - **Reported:** opening an x.com link from Telegram (custom tab → "Open in Firefox") left the sign-up wall in place.
