@@ -14,11 +14,13 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => await context.close());
 
-async function openFixture(name) {
+async function openFixture(name, { query = "", viewport } = {}) {
   const page = await context.newPage();
-  await page.goto(`http://127.0.0.1:8907/${name}.html`);
+  if (viewport) await page.setViewportSize(viewport);
+  await page.goto(`http://127.0.0.1:8907/${name}.html${query}`);
   return page;
 }
+const PHONE = { width: 412, height: 800 };
 const chipUndo = (page) => page.locator("[data-nagless-ui] #nagless-undo");
 
 // toBeHidden is vacuously true for a not-yet-inserted element; every blocking
@@ -157,6 +159,24 @@ test("gesture lock over an app shell scrolls the inner container", async () => {
     { timeout: 3000 }).toBeGreaterThan(200);
   await page.close();
 });
+
+// The card carries no dialog role, no lock and no nag class names, and its dim
+// layer is neither its sibling nor its parent, so every blocking signal the
+// engine had before this fixture misses it (sammobile.com, LaraPush).
+for (const [label, opts] of [
+  ["phone", { viewport: PHONE }],
+  ["phone, already up at injection", { viewport: PHONE, query: "?at=load" }],
+  ["desktop", {}],
+]) {
+  test(`push-notification prompt and its detached dim are hidden (${label})`, async () => {
+    const page = await openFixture("push-prompt", opts);
+    await nagAppears(page, 5000);
+    await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+    await expect(page.locator("#dim")).toBeHidden();
+    await expect(chipUndo(page)).toBeVisible();
+    await page.close();
+  });
+}
 
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");

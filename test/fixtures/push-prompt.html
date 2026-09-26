@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Push-notification prompt (must block)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  /* Shaped after LaraPush's prompt on sammobile.com: a smallish card pinned to
+     the top, no dialog role, no scroll lock, no nag words in its class names,
+     and a dim layer that is neither the card's sibling nor its parent. */
+  .lp-dim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 9999; }
+  .lp-card { position: fixed; top: 0; left: 50%; transform: translateX(-50%); box-sizing: border-box;
+             width: min(82vw, 520px); background: #fff; color: #222; z-index: 2147483000;
+             border-radius: 0 0 14px 14px; padding: 16px 20px 10px; font: 15px/1.4 system-ui, sans-serif;
+             box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3); }
+  .lp-row { display: flex; gap: 14px; }
+  .lp-logo { flex: none; width: 48px; height: 48px; background: #222; color: #fff; font: 700 32px/48px serif; text-align: center; }
+  .lp-row p { margin: 0 0 4px; }
+  .lp-sub { color: #666; font-size: 13px; }
+  .lp-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; }
+  .lp-actions button { font: inherit; border: 0; border-radius: 6px; padding: 10px 22px; background: none; }
+  .lp-actions .lp-allow { background: #3b7cf0; color: #fff; }
+  .lp-brand { text-align: center; font-size: 12px; color: #555; margin-top: 8px; }
+</style></head><body>
+<h1>Push-notification prompt</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  function showPrompt() {
+    const dim = document.createElement("div");
+    dim.id = "dim"; dim.className = "lp-dim";
+    const root = document.createElement("div");
+    root.className = "lp-root";
+    root.innerHTML = `<div id="nag" class="lp-card">
+      <div class="lp-row"><div class="lp-logo">S</div><div>
+        <p>We'd like to show you notifications for the latest important news and updates</p>
+        <p class="lp-sub">You can unsubscribe from notifications anytime.</p>
+      </div></div>
+      <div class="lp-actions"><button class="lp-close">Close</button><button class="lp-allow">Allow</button></div>
+      <div class="lp-brand">powered by LaraPush</div>
+    </div>`;
+    document.body.append(dim, root);
+  }
+  // ?at=load puts the prompt up while the page is still parsing, so it is
+  // already there when Nagless injects; otherwise it lands on a timer.
+  if (new URLSearchParams(location.search).get("at") === "load") showPrompt();
+  else setTimeout(showPrompt, 1500);
+</script>
+</body></html>
