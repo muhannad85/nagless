@@ -16,7 +16,7 @@
     armed: false,
     paused: false,               // set by Undo; lasts until next page load
     lastGestureTs: -Infinity,
-    lock: { locked: false, ts: -Infinity },
+    lock: { locked: false, ts: -Infinity }, // ts: when the page last locked; a block lifting the lock keeps it
     reassertUntil: 0,
     reassertBudget: 5,
     lastBlockTs: -Infinity,
@@ -42,6 +42,7 @@
   async function init() {
     if (window.top !== window) return; // top frame only (spec §3.3)
     listenForGestures();
+    listenForSettling();
     api.storage.onChanged.addListener(onStorageChanged);
     await syncEnabled(true);
   }
@@ -87,6 +88,21 @@
   }
 
   // ---------- observation ----------
+
+  // A CSS transition or animation moves or fades an overlay in without any DOM
+  // change. Zephr's paywall sheet on theverge.com is shown parked a viewport
+  // below the screen and slid up a second later, so it is off-screen at every
+  // mutation. Judge such elements again once they have settled.
+  function listenForSettling() {
+    const onSettled = (e) => {
+      if (!state.armed) return;
+      state.queue.add(e.target);
+      schedule();
+    };
+    for (const type of ["transitionend", "animationend"]) {
+      window.addEventListener(type, onSettled, { capture: true, passive: true });
+    }
+  }
 
   function onMutations(mutations) {
     for (const m of mutations) {
@@ -352,7 +368,7 @@
   function onRootAttrChanged() {
     const lockedNow = computeLocked();
     if (lockedNow === state.lock.locked) return;
-    state.lock = { locked: lockedNow, ts: now() };
+    state.lock = { locked: lockedNow, ts: lockedNow ? now() : state.lock.ts };
     if (!lockedNow) return;
     if (now() < state.reassertUntil && state.reassertBudget > 0) {
       // Site re-asserted its lock right after a block — undo it again, bounded.
@@ -369,10 +385,11 @@
     }
   }
 
+  // A lock that landed with this element counts even after a block lifted it:
+  // a dim judged before its slide-in sheet arrives takes the lock down first.
   function lockNearby(appearedTs) {
-    if (!state.lock.locked) return false;
     if (Math.abs(state.lock.ts - appearedTs) <= C.LOCK_PAIR_WINDOW_MS) return true;
-    return state.lock.ts === -Infinity && now() - appearedTs <= C.LOCK_PAIR_WINDOW_MS;
+    return state.lock.locked && state.lock.ts === -Infinity && now() - appearedTs <= C.LOCK_PAIR_WINDOW_MS;
   }
 
   function pruneRecent() {

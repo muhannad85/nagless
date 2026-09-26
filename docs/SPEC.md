@@ -72,6 +72,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 - One `MutationObserver` on `document.documentElement`: `childList + subtree`, plus `attributes` filtered to `style`, `class`.
 - Mutations are queued and processed in a single `requestAnimationFrame` batch (deduped). No full-document rescans, no polling intervals.
 - Candidates per batch: added element subtree roots, and existing elements whose `class`/`style` changed (covers the display-toggle pattern where the modal is in the DOM from page load and un-hidden later).
+- Elements whose CSS transition or animation just ended (`transitionend`/`animationend`, captured on `window`) are queued the same way. An overlay that arrives by transition changes no DOM while it moves, so every mutation can see it off-screen: Zephr's paywall sheet on theverge.com is shown parked a full viewport below the screen and slid up a second later. These events fire only when something actually animates, so this is not polling.
 - Within an added subtree, candidates are found in two passes: (1) a **targeted query** for dialog semantics (`role="dialog"`, `aria-modal`, `<dialog>`) that runs at any depth or document position, plus an attribute-substring query for nag-ish `class`/`id` names that runs **only on subtrees whose walk exhausted its node budget**; (2) a **budgeted document-order walk** (`MAX_TRAVERSAL_NODES`) for overlays with no semantic or naming hint. `getComputedStyle` is called only on shortlisted elements.
 - The targeted dialog pass exists because a budgeted walk alone silently misses overlays late in large DOMs: X.com places its sign-up wall past element 1500 of the page, beyond any affordable walk. The keyword query costs roughly 30x the walk, so it is gated on actual truncation — an SPA can emit hundreds of mutation roots per frame, and running it on each was measured at 24 ms of a 32 ms scan.
 - One initial scan at `document_idle` catches overlays already present at injection time. Elements present at that moment are flagged `preexisting` and additionally require dialog semantics, a nag keyword, or a notification ask (§5.4) to be blockable — page furniture (app shells, maps, editors) must never match on shape alone.
@@ -91,7 +92,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 
 | Signal | Weight |
 |---|---|
-| Scroll-lock applied to `html`/`body` within ±2s of appearance | +2 |
+| Scroll-lock applied to `html`/`body` within ±2s of appearance. It still counts after a block has lifted it: a dim judged before its slide-in sheet arrives takes the lock down first | +2 |
 | Dialog semantics: `role="dialog"`, `aria-modal="true"`, or `<dialog open>` | +2 |
 | Backdrop present: ancestor/sibling covering ≥ 95% viewport with non-transparent background or `backdrop-filter` | +2 |
 | Contains a text/email input, or an input was autofocused at appearance | +2 |

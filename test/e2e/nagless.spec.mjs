@@ -223,6 +223,18 @@ test("user-opened modal is NOT touched (invited)", async () => {
   await page.close();
 });
 
+// Judging overlays when their transition ends must not make a slow drawer look
+// uninvited: this one finishes sliding in 1.1s after the tap.
+test("user-opened slide-in drawer is NOT touched (invited, lands after the gesture window)", async () => {
+  const page = await openFixture("user-drawer", { viewport: PHONE });
+  await page.click("#open-drawer");
+  await page.locator("#nag.open").waitFor({ state: "attached", timeout: 3000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("#nag")).toBeVisible();
+  await expect(page.locator("#backdrop")).toBeVisible();
+  await page.close();
+});
+
 test("undo restores the popup and pauses blocking in the tab", async () => {
   const page = await openFixture("scroll-modal");
   await page.evaluate(() => window.scrollTo(0, 800));
