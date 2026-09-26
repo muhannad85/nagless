@@ -9,7 +9,7 @@ const base = {
   viewportCoverage: 0.5, widthFraction: 0.7, heightFraction: 0.7,
   zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, textInputFocused: false, hasVideo: false, keywordHitSelf: false,
   coversViewport: false, positioned: false, dialogShare: 1,
-  keywordHit: false, hasBackdrop: false, scrollLockNearby: false,
+  keywordHit: false, hasBackdrop: false, scrollLockNearby: false, asksNotifications: false,
 };
 
 test("newsletter modal composite blocks: lock + email input + high z", () => {
@@ -171,4 +171,54 @@ test("keywordHit matches nag vocabulary case-insensitively", () => {
   assert.equal(S.keywordHit("js-Newsletter-Modal open"), true);
   assert.equal(S.keywordHit("site-header nav"), false);
   assert.equal(S.keywordHit(""), false);
+});
+
+// Push-notification prompts (sammobile.com, LaraPush): a top-pinned card with
+// no input, no role and no lock; its dim is a separate layer elsewhere.
+const pushCard = { ...base, viewportCoverage: 0.15, widthFraction: 0.82, heightFraction: 0.18, zIndex: 2147483000 };
+
+test("asksForNotifications: a notification mention plus an Allow/Yes label", () => {
+  assert.equal(S.asksForNotifications([
+    "We'd like to show you notifications for the latest important news and updates",
+    "You can unsubscribe from notifications anytime.", "Close", "Allow", "powered by", "LaraPush",
+  ]), true);
+  assert.equal(S.asksForNotifications(["Get breaking news notifications", "Yes, notify me", "Later"]), true);
+});
+
+test("asksForNotifications: either half alone is not an ask", () => {
+  assert.equal(S.asksForNotifications(["We use cookies.", "Allow all"]), false);
+  assert.equal(S.asksForNotifications(["Notifications", "Settings", "Close"]), false);
+  assert.equal(S.asksForNotifications([]), false);
+});
+
+test("asksForNotifications: header calls to action and prose are not Allow labels", () => {
+  // A sticky header can carry a notifications link next to Subscribe or Turn on.
+  assert.equal(S.asksForNotifications(["Notifications", "Subscribe"]), false);
+  assert.equal(S.asksForNotifications(["Notifications", "Turn on"]), false);
+  assert.equal(S.asksForNotifications(["Allowing notifications helps"]), false);
+  assert.equal(S.asksForNotifications(["Allow me to explain why our notifications matter to readers"]), false);
+});
+
+test("notification ask lowers the size floor like a backdrop does", () => {
+  assert.equal(S.passesHardGates(pushCard), false);
+  assert.equal(S.passesHardGates({ ...pushCard, asksNotifications: true }), true);
+});
+
+test("notification prompt with a high z blocks without backdrop, lock or role", () => {
+  assert.equal(S.shouldBlock({ ...pushCard, asksNotifications: true }), true); // ask 2 + z 1 = 3
+});
+
+test("notification ask alone does not reach threshold", () => {
+  assert.equal(S.shouldBlock({ ...pushCard, asksNotifications: true, zIndex: 10 }), false); // 2
+});
+
+test("notification prompt already up at injection is not page furniture", () => {
+  const atLoad = { ...pushCard, asksNotifications: true, preexisting: true };
+  assert.equal(S.shouldBlock(atLoad), true);
+  assert.equal(S.passesHardGates({ ...atLoad, asksNotifications: false, hasBackdrop: true }), false);
+});
+
+test("notification ask still floors out toast-sized elements", () => {
+  const toast = { ...pushCard, asksNotifications: true, viewportCoverage: 0.04, widthFraction: 0.3, heightFraction: 0.1 };
+  assert.equal(S.passesHardGates(toast), false);
 });

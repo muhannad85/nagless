@@ -31,6 +31,14 @@ var NaglessScoring = (() => {
       "pop-up", "overlay", "interstitial", "lightbox", "promo", "offer",
       "paywall", "takeover",
     ],
+    // Push-permission prompts ("We'd like to show you notifications…" with
+    // Allow / Close) carry no input and often no role; what gives them away is
+    // the ask itself. Labels are Allow/Yes only: "Subscribe" and "Turn on"
+    // also sit in ordinary site headers next to a notifications link.
+    ASK_TOPIC: /\bnotif/i,
+    ASK_ACCEPT_LABEL: /^(allow|yes)\b/i,
+    ASK_LABEL_MAX_CHARS: 32,
+    ASK_MAX_TEXT_NODES: 100,
   };
 
   function passesHardGates(c) {
@@ -59,14 +67,15 @@ var NaglessScoring = (() => {
       c.viewportCoverage >= CONFIG.MIN_AREA_FRACTION ||
       (c.widthFraction >= CONFIG.SHEET_MIN_WIDTH_FRACTION &&
         c.heightFraction >= CONFIG.SHEET_MIN_HEIGHT_FRACTION) ||
-      ((c.hasBackdrop || c.scrollLockNearby || c.hasDialogSemantics) &&
+      ((c.hasBackdrop || c.scrollLockNearby || c.hasDialogSemantics || c.asksNotifications) &&
         c.viewportCoverage >= CONFIG.SIGNAL_MIN_AREA_FRACTION);
     if (!bigEnough) return false;
     // Elements already present when we injected are page furniture (app
     // shells, maps, editors). They must show intent to nag, not just shape.
     // The keyword must be on the element itself — a child's class (e.g. a
-    // video player's "control-overlay" layer) is not intent to nag.
-    if (c.preexisting && !(c.hasDialogSemantics || c.keywordHitSelf)) return false;
+    // video player's "control-overlay" layer) is not intent to nag. Asking
+    // for notification permission is intent by definition.
+    if (c.preexisting && !(c.hasDialogSemantics || c.keywordHitSelf || c.asksNotifications)) return false;
     return true;
   }
 
@@ -76,6 +85,7 @@ var NaglessScoring = (() => {
     if (c.hasDialogSemantics) score += 2;
     if (c.hasBackdrop) score += 2;
     if (c.hasTextInput || c.textInputFocused) score += 2;
+    if (c.asksNotifications) score += 2;
     if (typeof c.zIndex === "number" && c.zIndex >= CONFIG.HIGH_Z_INDEX) score += 1;
     if (c.keywordHit) score += 1;
     if (c.viewportCoverage >= CONFIG.NEAR_FULLSCREEN_FRACTION) score += 1;
@@ -101,7 +111,22 @@ var NaglessScoring = (() => {
     return CONFIG.NAG_KEYWORDS.some((k) => t.includes(k));
   }
 
-  return { CONFIG, passesHardGates, softScore, shouldBlock, isUninvited, normalizeHost, keywordHit };
+  // texts: the trimmed, non-empty text nodes of a candidate. An ask is a
+  // notification mention plus a button-sized Allow/Yes label, in any markup.
+  function asksForNotifications(texts) {
+    let topic = false;
+    let accept = false;
+    for (const t of texts) {
+      if (CONFIG.ASK_TOPIC.test(t)) topic = true;
+      if (t.length <= CONFIG.ASK_LABEL_MAX_CHARS && CONFIG.ASK_ACCEPT_LABEL.test(t)) accept = true;
+    }
+    return topic && accept;
+  }
+
+  return {
+    CONFIG, passesHardGates, softScore, shouldBlock, isUninvited, normalizeHost, keywordHit,
+    asksForNotifications,
+  };
 })();
 
 if (typeof module !== "undefined" && module.exports) module.exports = NaglessScoring;

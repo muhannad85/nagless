@@ -10,6 +10,7 @@
   const NAG_SELECTOR = [
     "modal", "popup", "overlay", "interstitial", "newsletter", "subscribe", "signup", "paywall",
   ].flatMap((k) => [`[class*="${k}" i]`, `[id*="${k}" i]`]).join(", ");
+  const NON_COPY_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"]);
 
   const state = {
     armed: false,
@@ -18,6 +19,7 @@
     lock: { locked: false, ts: -Infinity },
     reassertUntil: 0,
     reassertBudget: 5,
+    lastBlockTs: -Infinity,
     recent: [],                  // [{el, ts}] candidates seen appearing recently
     appearTs: new WeakMap(),     // Element -> first-visible timestamp
     preexisting: new WeakSet(),  // Elements visible at injection time
@@ -197,6 +199,15 @@
       state.recent.push({ el, ts: appearedTs });
     }
 
+    // A detached dim landing with an overlay we just blocked is that overlay's
+    // backdrop. The sweep in block() only sees dims that were evaluated first,
+    // and a batch evaluates the small card before the full-viewport dim.
+    if (Math.abs(appearedTs - state.lastBlockTs) <= C.LOCK_PAIR_WINDOW_MS &&
+        S.isUninvited(appearedTs, state.lastGestureTs) && isDimLayer(el, cs)) {
+      hideEl(el);
+      return;
+    }
+
     const zIndex = Number.isNaN(parseInt(cs.zIndex, 10)) ? null : parseInt(cs.zIndex, 10);
     const backdropEl = findBackdrop(el, vw, vh);
     const selfText = `${el.id} ${String(el.className)}`;
@@ -227,13 +238,27 @@
       hasVideo: el.querySelector("video") !== null,
       keywordHit: S.keywordHit(`${selfText} ${childClassText(el)}`),
       keywordHitSelf: S.keywordHit(selfText),
+      asksNotifications: S.asksForNotifications(textsOf(el)),
       hasBackdrop: backdropEl !== null,
       scrollLockNearby: lockNearby(appearedTs),
       coversViewport,
       positioned: cs.position !== "static",
     };
 
-    if (S.shouldBlock(candidate)) block(el, backdropEl, candidate.hasDialogSemantics);
+    if (S.shouldBlock(candidate)) block(el, backdropEl);
+  }
+
+  // Enough text to read a prompt card, never a whole page. Script and style
+  // text is code, not copy.
+  function textsOf(el) {
+    const texts = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let n = walker.nextNode();
+    for (let seen = 0; n && seen < C.ASK_MAX_TEXT_NODES; n = walker.nextNode(), seen += 1) {
+      const t = n.nodeValue.trim();
+      if (t && !NON_COPY_TAGS.has(n.parentElement?.tagName)) texts.push(t);
+    }
+    return texts;
   }
 
   function hasVisibleDialogDescendant(el) {
@@ -357,8 +382,9 @@
 
   // ---------- actions ----------
 
-  function block(el, backdropEl, isDialogWall) {
+  function block(el, backdropEl) {
     if (state.events >= C.MAX_EVENTS_PER_PAGE) return;
+    state.lastBlockTs = now();
     const sig = signatureOf(el);
     const nth = (state.signatures.get(sig) ?? 0) + 1;
     state.signatures.set(sig, nth);
@@ -371,7 +397,7 @@
     if (active && targets.some((t) => t.contains(active))) active.blur(); // dismisses mobile keyboard
 
     for (const t of targets) hideEl(t);
-    if (isDialogWall) sweepDetachedDims(targets);
+    sweepDetachedDims(targets);
     unlockScroll();
     installScrollShield();
     state.reassertUntil = now() + C.REASSERT_WINDOW_MS;
@@ -384,22 +410,28 @@
   }
 
   function sweepDetachedDims(eventTargets) {
-    // Some walls (Instagram desktop) keep their dimming layers as separate
-    // fixed divs elsewhere in the DOM. When a dialog-bearing wall is blocked,
-    // hide recently-appeared full-viewport dim layers so the page is usable.
+    // Some overlays (Instagram's desktop wall, push-notification prompts) keep
+    // their dimming layer as a separate fixed div elsewhere in the DOM. When
+    // one is blocked, hide recently-appeared full-viewport dim layers so the
+    // page is usable. A dim that came with a click belongs to something the
+    // user opened, and stays.
     pruneRecent();
-    for (const { el } of state.recent) {
+    for (const { el, ts } of state.recent) {
       if (!el.isConnected || state.hidden.has(el) || eventTargets.includes(el)) continue;
-      const cs = getComputedStyle(el);
-      if (cs.position !== "fixed" || cs.display === "none") continue;
-      const r = el.getBoundingClientRect();
-      if (r.width < window.innerWidth * C.WALL_MIN_DIM_FRACTION ||
-          r.height < window.innerHeight * C.WALL_MIN_DIM_FRACTION) continue;
-      if (el.children.length > 2 || (el.textContent || "").trim().length > 40) continue;
-      if (cs.backdropFilter === "none" && backgroundAlpha(cs.backgroundColor) <= 0.05) continue;
+      if (!S.isUninvited(ts, state.lastGestureTs) || !isDimLayer(el, getComputedStyle(el))) continue;
       hideEl(el);
       eventTargets.push(el);
     }
+  }
+
+  // A contentless, translucent, fixed layer over the whole viewport.
+  function isDimLayer(el, cs) {
+    if (cs.position !== "fixed" || cs.display === "none") return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < window.innerWidth * C.WALL_MIN_DIM_FRACTION ||
+        r.height < window.innerHeight * C.WALL_MIN_DIM_FRACTION) return false;
+    if (el.children.length > 2 || (el.textContent || "").trim().length > 40) return false;
+    return cs.backdropFilter !== "none" || backgroundAlpha(cs.backgroundColor) > 0.05;
   }
 
   function signatureOf(el) {

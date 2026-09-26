@@ -1,6 +1,6 @@
 # Nagless — popup & nag blocker
 
-Nagless hides the overlays nobody asked for: newsletter sign-up modals, "get email alerts" nags, timed and scroll-triggered interstitials. It unlocks the page scroll they hijack and dismisses the mobile keyboard that their autofocused email fields pop open — the single most annoying variant on Firefox for Android.
+Nagless hides the overlays nobody asked for: newsletter sign-up modals, "get email alerts" nags, push-notification prompts, timed and scroll-triggered interstitials. It unlocks the page scroll they hijack and dismisses the mobile keyboard that their autofocused email fields pop open — the single most annoying variant on Firefox for Android.
 
 **Install:** [Nagless on addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/nagless/) — Firefox desktop and Firefox for Android. The Chrome Web Store listing is not up yet.
 
