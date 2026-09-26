@@ -64,10 +64,12 @@
     document.body.append(prompt);
     write(dim, DIM_DOC);
     write(prompt, PROMPT_DOC);
+    if (mode.get("focus") === "1") prompt.contentDocument.querySelector(".allow").focus();
   }
   // ?at=load puts the prompt up while the page is still parsing, so it is
   // already there when Nagless injects; ?by=click waits for the button;
-  // otherwise it lands on a timer.
+  // otherwise it lands on a timer. ?focus=1 has the prompt focus its own
+  // Allow button, a script's focus() with no tap behind it.
   const mode = new URLSearchParams(location.search);
   if (mode.get("at") === "load") showPrompt();
   else if (mode.get("by") === "click") document.getElementById("open-prompt").addEventListener("click", showPrompt);

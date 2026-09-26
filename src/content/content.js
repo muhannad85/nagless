@@ -16,6 +16,7 @@
     armed: false,
     paused: false,               // set by Undo; lasts until next page load
     lastGestureTs: -Infinity,
+    blurTs: null,                // when this window last blurred; see lastGesture()
     lock: { locked: false, ts: -Infinity }, // ts: when the page last locked; a block lifting the lock keeps it
     reassertUntil: 0,
     reassertBudget: 5,
@@ -85,6 +86,25 @@
         state.lastGestureTs = now();
       }
     }, { capture: true, passive: true });
+    // A tap inside a frame is dispatched in the frame's own document, so the
+    // listeners above never see it. It does move focus into the frame, which
+    // blurs this window. lastGesture() decides whether the blur was that tap.
+    window.addEventListener("blur", () => { state.blurTs = now(); });
+  }
+
+  // The last gesture, counting a blur that moved focus into a frame while the
+  // user had just activated the page. User activation tells a tap apart from a
+  // script calling focus(). The blur is judged here, on read, because Firefox
+  // points activeElement at the frame only after the blur event, and an
+  // overlay opened by the tap can be judged before any deferred check runs.
+  function lastGesture() {
+    if (state.blurTs !== null) {
+      if (document.activeElement?.tagName === "IFRAME" && navigator.userActivation.isActive) {
+        state.lastGestureTs = state.blurTs;
+      }
+      state.blurTs = null;
+    }
+    return state.lastGestureTs;
   }
 
   // ---------- observation ----------
@@ -231,7 +251,7 @@
     // backdrop. The sweep in block() only sees dims that were evaluated first,
     // and a batch evaluates the small card before the full-viewport dim.
     if (Math.abs(appearedTs - state.lastBlockTs) <= C.LOCK_PAIR_WINDOW_MS &&
-        S.isUninvited(appearedTs, state.lastGestureTs) && isDimLayer(el, cs)) {
+        S.isUninvited(appearedTs, lastGesture()) && isDimLayer(el, cs)) {
       hideEl(el);
       return;
     }
@@ -246,7 +266,7 @@
     const appShellBranch = !fixedish && coversViewport && dialogSemantics;
 
     const candidate = {
-      uninvited: S.isUninvited(appearedTs, state.lastGestureTs),
+      uninvited: S.isUninvited(appearedTs, lastGesture()),
       isOwnUi: false,
       alreadyProcessed: false,
       preexisting: state.preexisting.has(el),
@@ -394,7 +414,7 @@
       unlockScroll();
       return;
     }
-    if (S.isUninvited(now(), state.lastGestureTs)) {
+    if (S.isUninvited(now(), lastGesture())) {
       // A lock landed uninvited: re-examine what appeared recently — the
       // overlay may have been inserted a beat before its lock.
       pruneRecent();
@@ -453,7 +473,7 @@
     pruneRecent();
     for (const { el, ts } of state.recent) {
       if (!el.isConnected || state.hidden.has(el) || eventTargets.includes(el)) continue;
-      if (!S.isUninvited(ts, state.lastGestureTs) || !isDimLayer(el, getComputedStyle(el))) continue;
+      if (!S.isUninvited(ts, lastGesture()) || !isDimLayer(el, getComputedStyle(el))) continue;
       hideEl(el);
       eventTargets.push(el);
     }

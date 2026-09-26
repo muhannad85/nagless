@@ -74,7 +74,7 @@
   </tr>
   <tr>
     <td><a href="push-prompt-iframes.html">push-prompt-iframes</a><br><span class="tag block">BLOCK</span></td>
-    <td class="exp">The same prompt built the way LaraPush builds it on sammobile.com, inside two iframes. Wait ~1.5s: the prompt and the dim both vanish and <b>the page takes taps again</b>. <a href="push-prompt-iframes.html?at=load">?at=load</a> shows it from the start; with <a href="push-prompt-iframes.html?by=click">?by=click</a> it opens only when you tap "Get notifications" and must <b>stay</b>.</td>
+    <td class="exp">The same prompt built the way LaraPush builds it on sammobile.com, inside two iframes. Wait ~1.5s: the prompt and the dim both vanish and <b>the page takes taps again</b>. <a href="push-prompt-iframes.html?at=load">?at=load</a> shows it from the start; with <a href="push-prompt-iframes.html?by=click">?by=click</a> it opens only when you tap "Get notifications" and must <b>stay</b>. With <a href="push-prompt-iframes.html?focus=1">?focus=1</a> the prompt moves focus onto its own Allow button, and it must still vanish.</td>
   </tr>
   <tr>
     <td><a href="slide-in-sheet.html">slide-in-sheet</a><br><span class="tag block">BLOCK</span></td>
@@ -98,7 +98,7 @@
   </tr>
   <tr>
     <td><a href="chat-launcher-frame.html">chat-launcher-frame</a><br><span class="tag keep">KEEP</span></td>
-    <td class="exp">Tap the round "Chat" button. A support chat fills the screen and locks scrolling, and it <b>stays open</b>, even though the button lives inside a frame where Nagless cannot see your tap. With <a href="chat-launcher-frame.html?nag=1">?nag=1</a> a newsletter modal comes first and is blocked; tap "Chat" right after the chip appears and the chat must still <b>stay open</b>. With <a href="chat-launcher-frame.html?ask=1">?ask=1</a> the chat opens on "Want to get notified when an agent replies?" and must still <b>stay open</b>.</td>
+    <td class="exp">Tap the round "Chat" button. A support chat fills the screen and locks scrolling, and it <b>stays open</b>, even though the button lives inside a frame where Nagless cannot see your tap. With <a href="chat-launcher-frame.html?nag=1">?nag=1</a> a newsletter modal comes first and is blocked, and a second later the chat opens by itself on a loading screen; it must <b>stay open</b>. With <a href="chat-launcher-frame.html?ask=1">?ask=1</a> the chat opens on "Want to get notified when an agent replies?" and must still <b>stay open</b>.</td>
   </tr>
   <tr>
     <td><a href="frame-viewer.html">frame-viewer</a><br><span class="tag keep">KEEP</span></td>

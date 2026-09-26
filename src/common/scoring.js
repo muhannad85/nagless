@@ -81,8 +81,9 @@ var NaglessScoring = (() => {
     // The keyword must be on the element itself — a child's class (e.g. a
     // video player's "control-overlay" layer) is not intent to nag. Asking
     // for notification permission is intent by definition. Frames must show
-    // intent too. A tap inside a frame never reaches our gesture listener, so
-    // a chat messenger opened from its launcher frame looks uninvited.
+    // intent too. A repeat tap in a frame that already has focus never reaches
+    // our gesture listener, so a chat reopened from its launcher frame looks
+    // uninvited.
     if ((c.preexisting || c.isFrame) &&
         !(c.hasDialogSemantics || c.keywordHitSelf || c.asksNotifications)) return false;
     return true;

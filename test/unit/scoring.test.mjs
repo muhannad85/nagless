@@ -237,8 +237,9 @@ test("a frame that asks for notifications has no size floor", () => {
   assert.equal(S.passesHardGates({ ...wide, isFrame: false }), false);
 });
 
-// A tap inside a frame never reaches the gesture listener, so a messenger the
-// user opened from a launcher frame looks uninvited.
+// A repeat tap in a frame that already has focus never reaches the gesture
+// listener, so a messenger the user reopened from a launcher frame looks
+// uninvited.
 test("a frame blocks only when it shows intent", () => {
   const messenger = { ...base, isFrame: true, viewportCoverage: 1, widthFraction: 1, heightFraction: 1, scrollLockNearby: true };
   assert.equal(S.shouldBlock(messenger), false); // lock 2 + z 1 + fullscreen 1, no intent

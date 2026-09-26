@@ -196,8 +196,8 @@ for (const [label, opts] of [
   });
 }
 
-// A tap inside a frame never reaches the page's listeners, so a messenger the
-// user opened from a launcher frame looks uninvited. It fills the phone screen
+// A tap inside a frame reaches none of the page's listeners. Nagless sees it
+// only as focus moving into the frame. The messenger fills the phone screen
 // and locks scrolling, which scores 4 on shape alone.
 test("chat opened from a launcher inside an iframe is NOT touched", async () => {
   const page = await openFixture("chat-launcher-frame", { viewport: PHONE });
@@ -208,13 +208,12 @@ test("chat opened from a launcher inside an iframe is NOT touched", async () => 
   await page.close();
 });
 
-// The detached-dim paths skip the intent rule. A messenger opened right after
-// an unrelated block, still on its opaque loading screen, is contentless and
-// fills the screen, but it is not see-through, so it is no dim.
-test("chat opened from a launcher frame right after a block is NOT swept as a dim", async () => {
+// The detached-dim paths skip the intent rule. A messenger that opens by itself
+// right after an unrelated block, still on its opaque loading screen, is
+// contentless and fills the screen, but it is not see-through, so it is no dim.
+test("chat that opens by itself right after a block is NOT swept as a dim", async () => {
   const page = await openFixture("chat-launcher-frame", { viewport: PHONE, query: "?nag=1" });
   await expect(chipUndo(page)).toBeVisible({ timeout: 5000 });
-  await page.frameLocator("#launcher").locator("button").click();
   await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
   await page.waitForTimeout(1500);
   await expect(page.locator("#chat")).toBeVisible();
@@ -234,6 +233,23 @@ for (const [label, viewport] of [["phone", PHONE], ["desktop", undefined]]) {
   });
 }
 
+// A second tap in a frame that already has focus moves no focus, so Nagless
+// never sees it. The frame-intent rule is what keeps the reopened chat up.
+test("chat reopened from a launcher frame that kept focus is NOT touched", async () => {
+  const page = await openFixture("chat-launcher-frame", { viewport: PHONE });
+  const launcher = page.frameLocator("#launcher").locator("button");
+  await launcher.click();
+  await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
+  await launcher.click();
+  await page.locator("#chat").waitFor({ state: "detached", timeout: 3000 });
+  await page.waitForTimeout(1200);
+  await launcher.click();
+  await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("#chat")).toBeVisible();
+  await page.close();
+});
+
 // A lightbox opened from a gallery frame. Its class names a nag, and right
 // after an unrelated block its 90% black layer also reads as a detached dim.
 for (const [label, opts] of [
@@ -249,6 +265,23 @@ for (const [label, opts] of [
     await page.locator("#viewer").waitFor({ state: "attached", timeout: 3000 });
     await page.waitForTimeout(1500);
     await expect(page.locator("#viewer")).toBeVisible();
+    await page.close();
+  });
+}
+
+// A prompt that focuses its own button moves focus into its frame with no tap
+// behind it, which must not count as a gesture. Playwright's locator polling
+// runs with a user gesture in Chromium and would give the page the very user
+// activation a tap leaves, so the page is left untouched until the prompt has
+// been judged.
+for (const [label, viewport] of [["phone", PHONE], ["desktop", { width: 1920, height: 1080 }]]) {
+  test(`push prompt that focuses itself inside its frame is still hidden (${label})`, async () => {
+    const page = await openFixture("push-prompt-iframes", { viewport, query: "?focus=1" });
+    await page.waitForTimeout(3000);
+    await expect(page.locator("#nag")).toHaveCount(1);
+    await expect(page.locator("#nag")).toBeHidden();
+    await expect(page.locator("#dim")).toBeHidden();
+    await expect(chipUndo(page)).toBeVisible();
     await page.close();
   });
 }
