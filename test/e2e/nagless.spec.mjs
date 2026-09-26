@@ -196,6 +196,31 @@ for (const [label, opts] of [
   });
 }
 
+// A tap inside a frame never reaches the page's listeners, so a messenger the
+// user opened from a launcher frame looks uninvited. It fills the phone screen
+// and locks scrolling, which scores 4 on shape alone.
+test("chat opened from a launcher inside an iframe is NOT touched", async () => {
+  const page = await openFixture("chat-launcher-frame", { viewport: PHONE });
+  await page.frameLocator("#launcher").locator("button").click();
+  await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("#chat")).toBeVisible();
+  await page.close();
+});
+
+// The detached-dim paths skip the intent rule. A messenger opened right after
+// an unrelated block, still on its opaque loading screen, is contentless and
+// fills the screen, but it is not see-through, so it is no dim.
+test("chat opened from a launcher frame right after a block is NOT swept as a dim", async () => {
+  const page = await openFixture("chat-launcher-frame", { viewport: PHONE, query: "?nag=1" });
+  await expect(chipUndo(page)).toBeVisible({ timeout: 5000 });
+  await page.frameLocator("#launcher").locator("button").click();
+  await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("#chat")).toBeVisible();
+  await page.close();
+});
+
 test("user-opened push prompt drawn in iframes is NOT touched (invited)", async () => {
   const page = await openFixture("push-prompt-iframes", { viewport: PHONE, query: "?by=click" });
   await page.click("#open-prompt");

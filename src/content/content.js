@@ -184,7 +184,19 @@
   }
 
   function consider(el, out) {
-    if (CANDIDATE_TAGS.has(el.tagName) || el.hasAttribute("role") || el.hasAttribute("aria-modal")) out.add(el);
+    if (CANDIDATE_TAGS.has(el.tagName) || el.hasAttribute("role") || el.hasAttribute("aria-modal") ||
+        frameBody(el) !== null) out.add(el);
+  }
+
+  // The body of an iframe whose document this script can read and that holds
+  // something. LaraPush writes its prompt and its dim into two such frames.
+  // Null for other elements, for cross-origin frames (contentDocument is null)
+  // and for the empty about:blank a cross-origin frame shows until its src
+  // loads. Only a frame's text (the ask) and paint (the dim) are read through
+  // it; inputs, video, dialogs and class names inside stay unread.
+  function frameBody(el) {
+    const body = el.tagName === "IFRAME" ? el.contentDocument?.body : null;
+    return body?.firstChild ? body : null;
   }
 
   // ---------- evaluation ----------
@@ -238,6 +250,7 @@
       isOwnUi: false,
       alreadyProcessed: false,
       preexisting: state.preexisting.has(el),
+      isFrame: el.tagName === "IFRAME",
       position: cs.position,
       visible,
       opacity: Number.isNaN(opacity) ? 1 : opacity,
@@ -265,10 +278,11 @@
   }
 
   // Enough text to read a prompt card, never a whole page. Script and style
-  // text is code, not copy.
+  // text is code, not copy. A frame's copy lives in its own document.
   function textsOf(el) {
+    const root = frameBody(el) ?? el;
     const texts = [];
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let n = walker.nextNode();
     for (let seen = 0; n && seen < C.ASK_MAX_TEXT_NODES; n = walker.nextNode(), seen += 1) {
       const t = n.nodeValue.trim();
@@ -332,9 +346,13 @@
       const r = cand.getBoundingClientRect();
       const covers = r.width >= vw * C.BACKDROP_MIN_COVERAGE && r.height >= vh * C.BACKDROP_MIN_COVERAGE;
       if (!covers) continue;
-      if (cs.backdropFilter !== "none" || backgroundAlpha(cs.backgroundColor) > 0.05) return cand;
+      if (paintsOver(cs)) return cand;
     }
     return null;
+  }
+
+  function paintsOver(cs) {
+    return cs.backdropFilter !== "none" || backgroundAlpha(cs.backgroundColor) > 0.05;
   }
 
   function backgroundAlpha(color) {
@@ -441,14 +459,32 @@
     }
   }
 
-  // A contentless, translucent, fixed layer over the whole viewport.
+  // A contentless, translucent, fixed layer over the whole viewport. A frame
+  // is judged by its document. LaraPush's dim frame is itself transparent, and
+  // its body > div.backdrop paints rgba(0,0,0,0.74) around a hidden "content
+  // locked" box whose text never renders, so a frame's text is its rendered
+  // text.
   function isDimLayer(el, cs) {
-    if (cs.position !== "fixed" || cs.display === "none") return false;
+    if (cs.position !== "fixed" || cs.display === "none" || !fillsView(el, window)) return false;
+    const body = frameBody(el);
+    if (!body) {
+      if (el.children.length > 2 || (el.textContent || "").trim().length > C.DIM_MAX_TEXT_CHARS) return false;
+      return paintsOver(cs);
+    }
+    const win = body.ownerDocument.defaultView;
+    return body.innerText.trim().length <= C.DIM_MAX_TEXT_CHARS &&
+      [...body.children].some((layer) => {
+        const lcs = win.getComputedStyle(layer);
+        // A dim lets the page show through. An opaque layer filling a frame is
+        // an app still loading, such as a chat messenger the user just opened.
+        return fillsView(layer, win) && paintsOver(lcs) && backgroundAlpha(lcs.backgroundColor) < 1;
+      });
+  }
+
+  function fillsView(el, win) {
     const r = el.getBoundingClientRect();
-    if (r.width < window.innerWidth * C.WALL_MIN_DIM_FRACTION ||
-        r.height < window.innerHeight * C.WALL_MIN_DIM_FRACTION) return false;
-    if (el.children.length > 2 || (el.textContent || "").trim().length > 40) return false;
-    return cs.backdropFilter !== "none" || backgroundAlpha(cs.backgroundColor) > 0.05;
+    return r.width >= win.innerWidth * C.WALL_MIN_DIM_FRACTION &&
+      r.height >= win.innerHeight * C.WALL_MIN_DIM_FRACTION;
   }
 
   function signatureOf(el) {

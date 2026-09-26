@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 const S = createRequire(import.meta.url)("../../src/common/scoring.js");
 
 const base = {
-  uninvited: true, isOwnUi: false, alreadyProcessed: false, preexisting: false,
+  uninvited: true, isOwnUi: false, alreadyProcessed: false, preexisting: false, isFrame: false,
   position: "fixed", visible: true, opacity: 1,
   viewportCoverage: 0.5, widthFraction: 0.7, heightFraction: 0.7,
   zIndex: 2000, hasDialogSemantics: false, hasTextInput: false, textInputFocused: false, hasVideo: false, keywordHitSelf: false,
@@ -173,8 +173,8 @@ test("keywordHit matches nag vocabulary case-insensitively", () => {
   assert.equal(S.keywordHit(""), false);
 });
 
-// Push-notification prompts (sammobile.com, LaraPush): a top-pinned card with
-// no input, no role and no lock; its dim is a separate layer elsewhere.
+// A push-notification prompt drawn in the page: a top-pinned card with no
+// input, no role and no lock; its dim is a separate layer elsewhere.
 const pushCard = { ...base, viewportCoverage: 0.15, widthFraction: 0.82, heightFraction: 0.18, zIndex: 2147483000 };
 
 test("asksForNotifications: a notification mention plus an Allow/Yes label", () => {
@@ -221,4 +221,27 @@ test("notification prompt already up at injection is not page furniture", () => 
 test("notification ask still floors out toast-sized elements", () => {
   const toast = { ...pushCard, asksNotifications: true, viewportCoverage: 0.04, widthFraction: 0.3, heightFraction: 0.1 };
   assert.equal(S.passesHardGates(toast), false);
+});
+
+// LaraPush's prompt on sammobile.com is an iframe 188px tall and at most 435px
+// wide: 7.99% of a 1280x800 desktop and 3.9% of 1920x1080.
+const laraPushFrame = { ...base, isFrame: true, viewportCoverage: 0.0799, widthFraction: 0.34, heightFraction: 0.235, zIndex: 2147483647 };
+
+test("a frame that asks for notifications has no size floor", () => {
+  assert.equal(S.passesHardGates(laraPushFrame), false);
+  assert.equal(S.shouldBlock({ ...laraPushFrame, asksNotifications: true }), true); // ask 2 + z 1
+  const wide = { ...laraPushFrame, asksNotifications: true, viewportCoverage: 0.039, widthFraction: 0.227, heightFraction: 0.174 };
+  assert.equal(S.shouldBlock(wide), true);
+  // In the page the same ask keeps the floor: a sticky header can carry a
+  // notifications soft-ask in its subtree.
+  assert.equal(S.passesHardGates({ ...wide, isFrame: false }), false);
+});
+
+// A tap inside a frame never reaches the gesture listener, so a messenger the
+// user opened from a launcher frame looks uninvited.
+test("a frame blocks only when it shows intent", () => {
+  const messenger = { ...base, isFrame: true, viewportCoverage: 1, widthFraction: 1, heightFraction: 1, scrollLockNearby: true };
+  assert.equal(S.shouldBlock(messenger), false); // lock 2 + z 1 + fullscreen 1, no intent
+  assert.equal(S.shouldBlock({ ...messenger, isFrame: false }), true);
+  assert.equal(S.shouldBlock({ ...messenger, hasDialogSemantics: true }), true);
 });

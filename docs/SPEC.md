@@ -35,14 +35,14 @@ Modern websites interrupt reading with *uninvited* overlays: newsletter sign-up 
 ### 3.2 Never touches
 
 - Overlays appearing within ~1s after a user gesture (tap/click/keypress) — lightboxes, login modals, menus, search overlays the user asked for.
-- Elements smaller than the size gates (§5.3) — inline banners, toasts, chat bubbles.
+- Elements smaller than the size gates (§5.3) — inline banners, toasts, chat bubbles. A frame that asks for notification permission (§5.2, §5.4) is the exception and is blocked at any size.
 - Anything when the site is allowlisted or the global toggle is off.
 
 ### 3.3 Non-goals (v1)
 
 - Ad blocking or any network-level blocking.
 - Filter/cosmetic lists (EasyList, Fanboy). The scoring module is the seam where list-derived rules could plug in later.
-- Overlays rendered entirely inside cross-origin iframes (content script runs top-frame only; rare for this nag class).
+- Overlays rendered entirely inside cross-origin iframes (content script runs top-frame only; rare for this nag class). Frames the page writes itself are same-origin and are read from the top frame (§5.2).
 - Safari, i18n (English only), settings sync across devices (uses `storage.local`), per-element picker.
 
 ## 4. Platform matrix
@@ -72,6 +72,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 - One `MutationObserver` on `document.documentElement`: `childList + subtree`, plus `attributes` filtered to `style`, `class`.
 - Mutations are queued and processed in a single `requestAnimationFrame` batch (deduped). No full-document rescans, no polling intervals.
 - Candidates per batch: added element subtree roots, and existing elements whose `class`/`style` changed (covers the display-toggle pattern where the modal is in the DOM from page load and un-hidden later).
+- **Frames.** An `<iframe>` whose document the top frame can read, and whose body holds something, is a candidate like a `div`. LaraPush on sammobile.com appends two src-less frames 15 s after load: a transparent full-viewport frame whose document paints the dim, and a frame of up to 435×188 holding the prompt. The frame element supplies the box (position, size, z-index, visibility). Only two things are read through it: its body's text, for the notification ask (§5.4), and its paint, for the dim test (§5.5). Cross-origin frames stay out (§3.3), including the empty `about:blank` a cross-origin frame shows until its `src` loads. A tap inside a frame never reaches the top window's gesture listener, so a frame the user opened would look uninvited. Like elements present at injection, a frame therefore needs dialog semantics or a nag keyword on the frame element, or a notification ask, to be blockable. The rule covers every `<iframe>` candidate, including a cross-origin one admitted by its `role` or class name, since a tap inside any frame is invisible. Mutations inside a frame are invisible to the observer, so a frame is judged on what it holds when it is inserted or when its own `style`/`class` changes.
 - Elements whose CSS transition or animation just ended (`transitionend`/`animationend`, captured on `window`) are queued the same way. An overlay that arrives by transition changes no DOM while it moves, so every mutation can see it off-screen: Zephr's paywall sheet on theverge.com is shown parked a full viewport below the screen and slid up a second later. These events fire only when something actually animates, so this is not polling.
 - Within an added subtree, candidates are found in two passes: (1) a **targeted query** for dialog semantics (`role="dialog"`, `aria-modal`, `<dialog>`) that runs at any depth or document position, plus an attribute-substring query for nag-ish `class`/`id` names that runs **only on subtrees whose walk exhausted its node budget**; (2) a **budgeted document-order walk** (`MAX_TRAVERSAL_NODES`) for overlays with no semantic or naming hint. `getComputedStyle` is called only on shortlisted elements.
 - The targeted dialog pass exists because a budgeted walk alone silently misses overlays late in large DOMs: X.com places its sign-up wall past element 1500 of the page, beyond any affordable walk. The keyword query costs roughly 30x the walk, so it is gated on actual truncation — an SPA can emit hundreds of mutation roots per frame, and running it on each was measured at 24 ms of a 32 ms scan.
@@ -84,7 +85,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 |---|---|
 | G1 Uninvited | §5.1 |
 | G2 Overlay positioning | Computed `position: fixed` or `sticky`, **or** the app-shell form: any non-static position, covering ≥ 90% of both viewport dimensions, carrying a visible dialog that accounts for ≥ `WALL_MIN_DIALOG_SHARE = 0.5` of the element's own node count. The share requirement is what separates a wall wrapper from the app's content root, which is also positioned, also covers the viewport, and also contains the dialog — measured on an Instagram profile, wall wrappers score 0.61 to 0.96 and the content root scores 0.07. Hiding that root blanks the page. The share is never consulted for a `fixed`/`sticky` overlay, which may legitimately be mostly artwork. |
-| G3 Size | Covers ≥ 25% of viewport area, **or** is a sheet: width ≥ 90% of viewport width and height ≥ 20% of viewport height, **or** covers ≥ 8% while accompanied by a backdrop, a scroll-lock, dialog semantics, or a notification ask (a modest card with any of those still intercepts the whole page) |
+| G3 Size | Covers ≥ 25% of viewport area, **or** is a sheet: width ≥ 90% of viewport width and height ≥ 20% of viewport height, **or** covers ≥ 8% while accompanied by a backdrop, a scroll-lock, dialog semantics, or a notification ask (a modest card with any of those still intercepts the whole page), **or** is a frame (§5.2) that carries a notification ask, at any size. A frame that asks is the prompt itself, and its card is a fixed size, so no share of the viewport holds for it: LaraPush's card, 188 px tall and at most 435 px wide, covers 23% of a 412×800 phone, 7.99% of 1280×800 and 3.9% of 1920×1080. In the page the ask keeps the 8% floor, because a sticky header can carry a notifications soft-ask in its subtree. The ask still needs a second signal to reach the score threshold. |
 | G4 Visible | Rendered (`display` ≠ `none`, `visibility: visible`, opacity > 0.05) and intersects the viewport |
 | G5 Foreign | Not Nagless UI, not already processed |
 
@@ -96,7 +97,7 @@ Lives in the content script. Three cooperating parts: interaction gating, candid
 | Dialog semantics: `role="dialog"`, `aria-modal="true"`, or `<dialog open>` | +2 |
 | Backdrop present: ancestor/sibling covering ≥ 95% viewport with non-transparent background or `backdrop-filter` | +2 |
 | Contains a text/email input, or an input was autofocused at appearance | +2 |
-| Notification ask: its text mentions notifications (`/\bnotif/i`) and carries a button-sized `Allow`/`Yes` label, in any markup. Push-permission prompts (LaraPush on sammobile.com) have no input and often no role; the ask is their signature. `Subscribe`/`Turn on` are deliberately excluded because site headers put them next to a notifications link. Reads at most `ASK_MAX_TEXT_NODES = 100` text nodes, skipping script/style | +2 |
+| Notification ask: its text mentions notifications (`/\bnotif/i`) and carries a button-sized `Allow`/`Yes` label, in any markup. Push-permission prompts (LaraPush on sammobile.com) have no input and often no role; the ask is their signature. `Subscribe`/`Turn on` are deliberately excluded because site headers put them next to a notifications link. Reads at most `ASK_MAX_TEXT_NODES = 100` text nodes, skipping script/style. In a frame (§5.2) the text is read from the frame's own document | +2 |
 | `z-index` ≥ 1000 | +1 |
 | Nag keywords in `id`/`class` of element or direct descendants (`newsletter`, `subscribe`, `signup`, `modal`, `popup`, `overlay`, `interstitial`, …) | +1 |
 | Near-fullscreen: covers ≥ 80% viewport area | +1 |
@@ -105,7 +106,7 @@ A standalone uninvited dimmer (backdrop + scroll-lock, no visible content) also 
 
 ### 5.5 Block action
 
-A **block event** groups: the overlay element(s), any associated backdrop, and the scroll-lock state change. The backdrop is the adjacent one from §5.4, plus any *detached* dim layer (fixed, ≥ 90% of both viewport dimensions, ≤ 2 children, ≤ 40 characters of text, translucent) that appeared uninvited alongside the overlay: dims already seen are swept when the block fires, and a dim first seen within `LOCK_PAIR_WINDOW_MS` of the block but evaluated after it (a batch evaluates the small card before the full-viewport dim) is hidden then. Per event:
+A **block event** groups: the overlay element(s), any associated backdrop, and the scroll-lock state change. The backdrop is the adjacent one from §5.4, plus any *detached* dim layer (fixed, ≥ 90% of both viewport dimensions, ≤ 2 children, ≤ 40 characters of text, translucent; a frame (§5.2) qualifies when its own document renders ≤ 40 characters of text and a child of its body spans ≥ 90% of the frame and is see-through, with a backdrop filter or a background alpha above 5% and below 100%, because LaraPush's dim frame is transparent itself and paints `rgba(0,0,0,0.74)` from a `div.backdrop` that also holds a hidden "content locked" box; an opaque layer filling a frame is an app still loading, such as a chat the user just opened) that appeared uninvited alongside the overlay: dims already seen are swept when the block fires, and a dim first seen within `LOCK_PAIR_WINDOW_MS` of the block but evaluated after it (a batch evaluates the small card before the full-viewport dim) is hidden then. Per event:
 
 1. Hide each element with inline `display: none !important` (via `style.setProperty(..., 'important')`), after recording the prior inline `display` value and tagging with `data-nagless-id`.
 2. If `document.activeElement` is inside a hidden element: `blur()` it (dismisses the Android keyboard).
@@ -249,4 +250,4 @@ Dev dependencies only: `web-ext` (lint / desktop & Android run / AMO sign), `@pl
 
 ## 14. Post-v1 roadmap (recorded, not committed)
 
-Optional filter-list rules; `all_frames` for iframe-hosted overlays; Edge Add-ons listing; i18n; `storage.sync`; per-element "zap" picker; Safari port.
+Optional filter-list rules; `all_frames` for overlays inside cross-origin iframes; Edge Add-ons listing; i18n; `storage.sync`; per-element "zap" picker; Safari port.

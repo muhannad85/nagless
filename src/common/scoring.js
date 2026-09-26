@@ -18,6 +18,7 @@ var NaglessScoring = (() => {
     MAX_SORTED_CANDIDATES: 120,
     MIN_AREA_FRACTION: 0.25,
     WALL_MIN_DIM_FRACTION: 0.9,
+    DIM_MAX_TEXT_CHARS: 40,
     WALL_MIN_DIALOG_SHARE: 0.5,
     SIGNAL_MIN_AREA_FRACTION: 0.08,
     SHEET_MIN_WIDTH_FRACTION: 0.9,
@@ -69,13 +70,21 @@ var NaglessScoring = (() => {
         c.heightFraction >= CONFIG.SHEET_MIN_HEIGHT_FRACTION) ||
       ((c.hasBackdrop || c.scrollLockNearby || c.hasDialogSemantics || c.asksNotifications) &&
         c.viewportCoverage >= CONFIG.SIGNAL_MIN_AREA_FRACTION);
-    if (!bigEnough) return false;
+    // A frame that asks for notification permission is the prompt itself, so
+    // it has no size floor. Its card is a fixed size. LaraPush's is 188px tall
+    // and at most 435px wide, which is 23% of a 412x800 phone but 3.9% of a
+    // 1920x1080 desktop. In the page the ask keeps the floor, because a sticky
+    // header can carry a notifications soft-ask in its subtree.
+    if (!bigEnough && !(c.isFrame && c.asksNotifications)) return false;
     // Elements already present when we injected are page furniture (app
     // shells, maps, editors). They must show intent to nag, not just shape.
     // The keyword must be on the element itself — a child's class (e.g. a
     // video player's "control-overlay" layer) is not intent to nag. Asking
-    // for notification permission is intent by definition.
-    if (c.preexisting && !(c.hasDialogSemantics || c.keywordHitSelf || c.asksNotifications)) return false;
+    // for notification permission is intent by definition. Frames must show
+    // intent too. A tap inside a frame never reaches our gesture listener, so
+    // a chat messenger opened from its launcher frame looks uninvited.
+    if ((c.preexisting || c.isFrame) &&
+        !(c.hasDialogSemantics || c.keywordHitSelf || c.asksNotifications)) return false;
     return true;
   }
 
