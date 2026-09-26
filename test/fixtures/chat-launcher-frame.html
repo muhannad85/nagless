@@ -17,7 +17,10 @@
   // page's own listeners never see it. On a phone the messenger then fills the
   // screen and locks page scroll, showing an opaque loading screen for a
   // second first. ?nag=1 also puts up a newsletter modal for Nagless to block,
-  // so the messenger can open right after a block.
+  // so the messenger can open right after a block. ?ask=1 opens it straight on
+  // a transcript that asks for notification permission, as a returning
+  // visitor's chat can.
+  const params = new URLSearchParams(location.search);
   function frame(id, style, html) {
     const f = document.createElement("iframe");
     f.id = id;
@@ -37,15 +40,21 @@
         header { background: #1f6feb; color: #fff; padding: 16px; font-weight: 600; }
         main { flex: 1; padding: 16px; }
         textarea { margin: 12px; height: 60px; }
-      </style></head><body><div class="loading">Loading…</div></body></html>`);
+      </style></head><body>${params.get("ask") === "1" ? ASKING : '<div class="loading">Loading…</div>'}</body></html>`);
     document.documentElement.style.overflow = "hidden";
-    setTimeout(() => {
-      chat.contentDocument.body.innerHTML = `<header>Support</header>
-        <main><p>Hi there! Have a question about your order? We usually reply in a few minutes.</p></main>
-        <textarea placeholder="Write a message"></textarea>`;
-    }, 1000);
+    if (params.get("ask") !== "1") {
+      setTimeout(() => {
+        chat.contentDocument.body.innerHTML = `<header>Support</header>
+          <main><p>Hi there! Have a question about your order? We usually reply in a few minutes.</p></main>
+          <textarea placeholder="Write a message"></textarea>`;
+      }, 1000);
+    }
   }
-  if (new URLSearchParams(location.search).get("nag") === "1") {
+  const ASKING = `<header>Support</header>
+    <main><p>Thanks, an agent will be with you shortly.</p><p>Want to get notified when an agent replies?</p>
+    <p><button type="button">Yes</button> <button type="button">No</button></p></main>
+    <textarea placeholder="Write a message"></textarea>`;
+  if (params.get("nag") === "1") {
     setTimeout(() => {
       const nag = document.createElement("div");
       nag.id = "nag";

@@ -221,6 +221,38 @@ test("chat opened from a launcher frame right after a block is NOT swept as a di
   await page.close();
 });
 
+// This chat asks about notifications, which the frame-intent rule alone takes
+// for a push prompt. Only seeing the tap that opened it keeps it up.
+for (const [label, viewport] of [["phone", PHONE], ["desktop", undefined]]) {
+  test(`chat that asks about notifications, opened from a launcher frame, is NOT touched (${label})`, async () => {
+    const page = await openFixture("chat-launcher-frame", { viewport, query: "?ask=1" });
+    await page.frameLocator("#launcher").locator("button").click();
+    await page.locator("#chat").waitFor({ state: "attached", timeout: 3000 });
+    await page.waitForTimeout(1500);
+    await expect(page.locator("#chat")).toBeVisible();
+    await page.close();
+  });
+}
+
+// A lightbox opened from a gallery frame. Its class names a nag, and right
+// after an unrelated block its 90% black layer also reads as a detached dim.
+for (const [label, opts] of [
+  ["phone", { viewport: PHONE }],
+  ["desktop", {}],
+  ["phone, right after a block", { viewport: PHONE, query: "?nag=1" }],
+  ["desktop, right after a block", { query: "?nag=1" }],
+]) {
+  test(`viewer opened from a gallery frame is NOT touched (${label})`, async () => {
+    const page = await openFixture("frame-viewer", opts);
+    if (opts.query) await expect(chipUndo(page)).toBeVisible({ timeout: 5000 });
+    await page.frameLocator("#gallery").locator("button").first().click();
+    await page.locator("#viewer").waitFor({ state: "attached", timeout: 3000 });
+    await page.waitForTimeout(1500);
+    await expect(page.locator("#viewer")).toBeVisible();
+    await page.close();
+  });
+}
+
 test("user-opened push prompt drawn in iframes is NOT touched (invited)", async () => {
   const page = await openFixture("push-prompt-iframes", { viewport: PHONE, query: "?by=click" });
   await page.click("#open-prompt");
