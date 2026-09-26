@@ -178,6 +178,28 @@ for (const [label, opts] of [
   });
 }
 
+// Zephr's paywall on theverge.com. The sheet is shown parked below the screen
+// and slides up by CSS transition, so no DOM change ever happens while it is on
+// screen. Its dim is judged first and blocking it lifts the scroll lock, which
+// took the sheet's lock signal with it.
+for (const [label, opts] of [["phone", { viewport: PHONE }], ["desktop", {}]]) {
+  test(`slide-in subscription sheet and its dim are hidden, scrolling restored (${label})`, async () => {
+    const page = await openFixture("slide-in-sheet", opts);
+    await nagAppears(page, 3000);
+    await page.evaluate(() => window.scrollTo(0, 800)); // programmatic: not a gesture
+    // The sheet starts display:none, so hidden only means something once the
+    // slide has begun.
+    await page.locator("#nag.transform").waitFor({ state: "attached", timeout: 5000 });
+    await expect(page.locator("#nag")).toBeHidden({ timeout: 3000 });
+    await expect(page.locator("#dim")).toBeHidden();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).position)).not.toBe("fixed");
+    await page.mouse.move(200, 400);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 }).toBeGreaterThan(1000);
+    await page.close();
+  });
+}
+
 test("sticky video player is NOT touched despite focus and overlay classes", async () => {
   const page = await openFixture("video-player");
   await page.waitForTimeout(2500); // outlives the 1s programmatic focus

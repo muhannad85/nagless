@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide-in subscription sheet (must block)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+  /* Shaped after Zephr's paywall on theverge.com. The sheet is parked a full
+     viewport below the screen when it is shown, then a class slides it up
+     with a CSS transition a second later, so no DOM change happens while it
+     is on screen. Its dim is the last child of body, far from the sheet, and
+     the page pins body with position:fixed at the moment both are shown. */
+  .zephr-zone-footer { display: none; position: fixed; left: 0; right: 0; bottom: -100vh; z-index: 100000; }
+  .zephr-zone-footer.transform { transition: translate .3s; translate: 0 -100vh; }
+  .zephr-footer-body { background: #3cffd0; color: #000; padding: 32px 16px; text-align: center; font-family: system-ui, sans-serif; }
+  .zephr-footer-body h2 { font-size: 28px; line-height: 1.04; margin: 0 0 12px; }
+  .zephr-footer-body p { font-size: 18px; margin: 0 0 20px; }
+  .zephr-footer-body button { width: 100%; max-width: 540px; background: #5200ff; color: #fff; border: 0; border-radius: 2px;
+                              padding: 13px 20px; font: 500 12px/20px monospace; letter-spacing: 1.44px; margin-bottom: 16px; }
+  .zephr-footer-body a { display: block; font: 12px/2 monospace; color: #000; }
+  .zephr-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 99999; transition: opacity .5s; }
+</style></head><body>
+<h1>Slide-in subscription sheet</h1>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  let sheet = null;
+  let dim = null;
+  let shown = false;
+
+  // Zephr renders both layers hidden shortly after load and waits for a scroll.
+  setTimeout(() => {
+    sheet = document.createElement("div");
+    sheet.id = "nag";
+    sheet.className = "zephr-zone-footer";
+    sheet.innerHTML = `<div class="zephr-footer-body">
+      <h2>Continue reading with a subscription</h2>
+      <p>Unlock unlimited access for just $2.</p>
+      <button type="button">START YOUR TRIAL</button>
+      <a href="#">Already a subscriber? Sign in</a>
+      <a href="#">Back to the homepage</a>
+    </div>`;
+    document.getElementById("content").after(sheet);
+    dim = document.createElement("div");
+    dim.id = "dim";
+    dim.className = "zephr-overlay";
+    document.body.append(dim);
+  }, 800);
+
+  window.addEventListener("scroll", () => {
+    if (shown || sheet === null || window.scrollY < 300) return;
+    shown = true;
+    document.body.style.cssText = `overflow: hidden; position: fixed; top: -${window.scrollY}px; width: 100%;`;
+    sheet.style.display = "block";
+    dim.style.display = "block";
+    setTimeout(() => sheet.classList.add("transform"), 1000);
+  }, { passive: true });
+</script>
+</body></html>
