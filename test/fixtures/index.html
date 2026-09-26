@@ -73,6 +73,10 @@
     <td class="exp">Wait ~1.5s. A "We'd like to show you notifications" prompt drops in from the top and the page dims. Both vanish; the page is readable and tappable. <a href="push-prompt.html?at=load">?at=load</a> shows it from the start instead.</td>
   </tr>
   <tr>
+    <td><a href="push-prompt-iframes.html">push-prompt-iframes</a><br><span class="tag block">BLOCK</span></td>
+    <td class="exp">The same prompt built the way LaraPush builds it on sammobile.com, inside two iframes. Wait ~1.5s: the prompt and the dim both vanish and <b>the page takes taps again</b>. <a href="push-prompt-iframes.html?at=load">?at=load</a> shows it from the start; with <a href="push-prompt-iframes.html?by=click">?by=click</a> it opens only when you tap "Get notifications" and must <b>stay</b>.</td>
+  </tr>
+  <tr>
     <td><a href="slide-in-sheet.html">slide-in-sheet</a><br><span class="tag block">BLOCK</span></td>
     <td class="exp">Scroll down a little. The page dims and a second later a "Continue reading with a subscription" sheet slides up from the bottom. The dim goes at once, the sheet goes as soon as it lands, and <b>the page keeps scrolling</b>.</td>
   </tr>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Push-notification prompt drawn in iframes (must block)</title>
+<style>
+  body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
+</style></head><body>
+<h1>Push-notification prompt drawn in iframes</h1>
+<p><button id="open-prompt" type="button">Get notifications</button></p>
+<div id="content"></div>
+<script>
+  document.getElementById("content").innerHTML =
+    Array.from({length: 34}, (_, i) => `<p>Paragraph ${i + 1}. Scroll on, reader. Nothing to see here but honest text that keeps the page tall enough to scroll comfortably on any device.</p>`).join("");
+</script>
+<script>
+  // Copied from LaraPush 5.0.0 as it runs on sammobile.com. The page writes two
+  // iframes with no src, so both are same-origin. Seen from this document each
+  // is an empty, transparent frame: the dim's color and the prompt's text live
+  // in the frames' own documents. The dim frame lands near the top of <body>
+  // and the prompt frame at the end, so neither is the other's sibling.
+  const DIM_STYLE = "position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important; bottom: auto !important; width: 100vw; height: 100vh; z-index: 2147483646 !important; background: none !important; background-color: transparent !important; border: 0 !important; padding: 0 !important; margin: 0 !important; display: block !important; pointer-events: auto !important;";
+  const PROMPT_STYLE = "position: fixed !important; inset: 0px auto auto 0px !important; width: 100% !important; max-width: 435px !important; height: 188px; z-index: 2147483647 !important; background: none transparent !important; border: 0 !important; padding: 0 !important; margin: 0 !important; display: block !important; pointer-events: auto !important;";
+  const DIM_DOC = `<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+      html, body { margin: 0; background: transparent; }
+      .backdrop { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.74); }
+      .hide { display: none; }
+    </style></head><body><div class="backdrop"><div class="hide lock"><div class="contentBox">This page content is locked<br>Please click on below button to unlock.<button class="ulbtn">UNLOCK NOW!</button></div></div></div></body></html>`;
+  const PROMPT_DOC = `<!doctype html><html lang="en"><head><meta charset="utf-8"><style>
+      html, body { margin: 0; background: transparent; font: 15px/1.4 system-ui, sans-serif; }
+      #larapush-optin { position: fixed; top: 0; left: 16px; right: 16px; box-sizing: border-box; background: #fff; color: #222;
+                        border-radius: 0 0 14px 14px; padding: 16px 20px 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3); }
+      .row { display: flex; gap: 14px; }
+      .icon { flex: none; width: 40px; height: 40px; background: #222; color: #fff; font: 700 28px/40px serif; text-align: center; }
+      .ctas { justify-content: flex-end; margin-top: 12px; }
+      .ctas button { font: inherit; border: 0; border-radius: 6px; padding: 10px 22px; background: none; }
+      .ctas .allow { background: #007bff; color: #fff; }
+      .brand { justify-content: center; margin-top: 6px; }
+      .brand span { display: block; width: 110px; height: 20px; background: #eee; }
+    </style></head><body><div id="larapush-optin" class="larapush-optin--dialog-box top show">
+      <div class="row"><div class="icon" aria-hidden="true">S</div><div class="larapush-optin--content">
+        <div class="larapush-optin--title"><span class="larapush-optin-heading">We'd like to show you notifications for the latest important news and updates</span></div>
+        <div class="larapush-optin--message"><span class="larapush-optin-subheading">You can unsubscribe from notifications anytime.</span></div>
+      </div></div>
+      <div class="row ctas"><button class="larapush-optin--cta-later">Close</button> <button class="larapush-optin--cta-allow allow">Allow</button></div>
+      <div class="row brand"><a id="poweredBy" href="#"><span></span></a></div>
+    </div></body></html>`;
+
+  function frame(id, style) {
+    const f = document.createElement("iframe");
+    f.id = id;
+    f.setAttribute("style", style);
+    return f;
+  }
+  function write(f, html) {
+    const doc = f.contentDocument;
+    doc.open();
+    doc.write(html);
+    doc.close();
+  }
+  function showPrompt() {
+    const dim = frame("dim", DIM_STYLE);
+    const prompt = frame("nag", PROMPT_STYLE);
+    document.body.prepend(dim);
+    document.body.append(prompt);
+    write(dim, DIM_DOC);
+    write(prompt, PROMPT_DOC);
+  }
+  // ?at=load puts the prompt up while the page is still parsing, so it is
+  // already there when Nagless injects; ?by=click waits for the button;
+  // otherwise it lands on a timer.
+  const mode = new URLSearchParams(location.search);
+  if (mode.get("at") === "load") showPrompt();
+  else if (mode.get("by") === "click") document.getElementById("open-prompt").addEventListener("click", showPrompt);
+  else setTimeout(showPrompt, 1500);
+</script>
+</body></html>

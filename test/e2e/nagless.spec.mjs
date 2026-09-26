@@ -160,9 +160,9 @@ test("gesture lock over an app shell scrolls the inner container", async () => {
   await page.close();
 });
 
-// The card carries no dialog role, no lock and no nag class names, and its dim
-// layer is neither its sibling nor its parent, so every blocking signal the
-// engine had before this fixture misses it (sammobile.com, LaraPush).
+// A push prompt drawn in the page itself. The card carries no dialog role, no
+// lock and no nag class names, and its dim layer is neither its sibling nor its
+// parent, so every blocking signal the engine had before this fixture misses it.
 for (const [label, opts] of [
   ["phone", { viewport: PHONE }],
   ["phone, already up at injection", { viewport: PHONE, query: "?at=load" }],
@@ -177,6 +177,34 @@ for (const [label, opts] of [
     await page.close();
   });
 }
+
+// LaraPush on sammobile.com draws the same prompt and its dim inside two
+// same-origin iframes, so from the page's own document both are empty frames.
+// The 435x188 card is 3.9% of a 1920x1080 screen.
+for (const [label, opts] of [
+  ["phone", { viewport: PHONE }],
+  ["phone, already up at injection", { viewport: PHONE, query: "?at=load" }],
+  ["desktop", { viewport: { width: 1920, height: 1080 } }],
+]) {
+  test(`push-notification prompt drawn in iframes and its dim frame are hidden (${label})`, async () => {
+    const page = await openFixture("push-prompt-iframes", opts);
+    await nagAppears(page, 5000);
+    await expect(page.locator("#nag")).toBeHidden({ timeout: 5000 });
+    await expect(page.locator("#dim")).toBeHidden();
+    await expect(chipUndo(page)).toBeVisible();
+    await page.close();
+  });
+}
+
+test("user-opened push prompt drawn in iframes is NOT touched (invited)", async () => {
+  const page = await openFixture("push-prompt-iframes", { viewport: PHONE, query: "?by=click" });
+  await page.click("#open-prompt");
+  await nagAppears(page, 3000);
+  await page.waitForTimeout(1500);
+  await expect(page.locator("#nag")).toBeVisible();
+  await expect(page.locator("#dim")).toBeVisible();
+  await page.close();
+});
 
 // Zephr's paywall on theverge.com. The sheet is shown parked below the screen
 // and slides up by CSS transition, so no DOM change ever happens while it is on

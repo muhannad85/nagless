@@ -4,9 +4,10 @@
 <title>Push-notification prompt (must block)</title>
 <style>
   body { font: 18px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 40em; padding: 1em; }
-  /* Shaped after LaraPush's prompt on sammobile.com: a smallish card pinned to
-     the top, no dialog role, no scroll lock, no nag words in its class names,
-     and a dim layer that is neither the card's sibling nor its parent. */
+  /* A push prompt drawn in the page itself: a smallish card pinned to the top,
+     no dialog role, no scroll lock, no nag words in its class names, and a dim
+     layer that is neither the card's sibling nor its parent. LaraPush draws
+     the same prompt inside iframes; see push-prompt-iframes.html. */
   .lp-dim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 9999; }
   .lp-card { position: fixed; top: 0; left: 50%; transform: translateX(-50%); box-sizing: border-box;
              width: min(82vw, 520px); background: #fff; color: #222; z-index: 2147483000;
